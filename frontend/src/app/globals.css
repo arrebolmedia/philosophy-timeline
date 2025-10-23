@@ -1,0 +1,236 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 222.2 47.4% 11.2%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 222.2 84% 4.9%;
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 210 40% 98%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 212.7 26.8% 83.9%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* Estilos personalizados para el timeline */
+@layer components {
+  .timeline-canvas {
+    cursor: grab;
+  }
+  
+  .timeline-canvas:active {
+    cursor: grabbing;
+  }
+  
+  .philosopher-node {
+    @apply transition-all duration-200 ease-in-out;
+  }
+  
+  .philosopher-node:hover {
+    @apply scale-110 drop-shadow-lg;
+  }
+  
+  .statement-node {
+    @apply transition-all duration-150 ease-in-out;
+  }
+  
+  .statement-node:hover {
+    @apply scale-105 brightness-110;
+  }
+  
+  .connection-line {
+    @apply transition-all duration-300 ease-in-out;
+  }
+  
+  .connection-line.agreement {
+    @apply stroke-connections-agreement;
+  }
+  
+  .connection-line.disagreement {
+    @apply stroke-connections-disagreement;
+  }
+  
+  .connection-line.expansion {
+    @apply stroke-connections-expansion;
+  }
+  
+  .connection-line.refutation {
+    @apply stroke-connections-refutation;
+  }
+  
+  /* Animaciones personalizadas */
+  .fade-in-up {
+    animation: fadeInUp 0.5s ease-out forwards;
+  }
+  
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  .slide-in-right {
+    animation: slideInRight 0.3s ease-out forwards;
+  }
+  
+  @keyframes slideInRight {
+    from {
+      opacity: 0;
+      transform: translateX(30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+  
+  /* Scrollbar personalizado */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-track {
+    @apply bg-muted rounded-full;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    @apply bg-muted-foreground/30 rounded-full;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    @apply bg-muted-foreground/50;
+  }
+}
+
+/* Utilidades para el timeline */
+@layer utilities {
+  .text-shadow-sm {
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  }
+  
+  .text-shadow {
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+  
+  .text-shadow-lg {
+    text-shadow: 0 4px 8px rgba(0, 0, 0, 0.12), 0 2px 4px rgba(0, 0, 0, 0.08);
+  }
+  
+  .backdrop-blur-xs {
+    backdrop-filter: blur(2px);
+  }
+  
+  /* Grid para timeline */
+  .timeline-grid {
+    background-image: 
+      linear-gradient(rgba(var(--muted-foreground), 0.1) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(var(--muted-foreground), 0.1) 1px, transparent 1px);
+    background-size: 50px 50px;
+  }
+  
+  /* Gradientes para períodos históricos */
+  .period-gradient-ancient {
+    background: linear-gradient(135deg, #8B4513 0%, #A0522D 100%);
+  }
+  
+  .period-gradient-medieval {
+    background: linear-gradient(135deg, #4682B4 0%, #5F9EA0 100%);
+  }
+  
+  .period-gradient-renaissance {
+    background: linear-gradient(135deg, #DAA520 0%, #FFD700 100%);
+  }
+  
+  .period-gradient-modern {
+    background: linear-gradient(135deg, #228B22 0%, #32CD32 100%);
+  }
+  
+  .period-gradient-nineteen {
+    background: linear-gradient(135deg, #DC143C 0%, #FF6347 100%);
+  }
+  
+  .period-gradient-twenty {
+    background: linear-gradient(135deg, #9932CC 0%, #BA55D3 100%);
+  }
+  
+  .period-gradient-contemporary {
+    background: linear-gradient(135deg, #FF1493 0%, #FF69B4 100%);
+  }
+}
+
+/* Responsive breakpoints adicionales para timeline */
+@media (max-width: 640px) {
+  .timeline-mobile {
+    /* Ajustes específicos para móvil */
+  }
+}
+
+@media (min-width: 1920px) {
+  .timeline-desktop-xl {
+    /* Optimizaciones para pantallas grandes */
+  }
+}
+
+/* Print styles */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  
+  .print-friendly {
+    background: white !important;
+    color: black !important;
+  }
+}
