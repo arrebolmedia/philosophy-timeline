@@ -2,26 +2,24 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import AdminNav from '@/components/layout/AdminNav';
 
 export default function AdminPage() {
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Admin Navigation */}
+      <AdminNav />
+      
       {/* Header */}
       <header className="bg-white shadow">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex justify-between items-center">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Admin Panel</h1>
+              <h1 className="text-3xl font-bold text-gray-900">Panel de Administración</h1>
               <p className="mt-1 text-sm text-gray-600">
                 Gestiona filósofos, statements y conexiones
               </p>
             </div>
-            <Link
-              href="/"
-              className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors"
-            >
-              ← Volver al Timeline
-            </Link>
           </div>
         </div>
       </header>

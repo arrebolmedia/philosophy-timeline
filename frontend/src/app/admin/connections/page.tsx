@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import AdminNav from '@/components/layout/AdminNav';
 
 // Estilos para las opciones del select
 const selectStyles = `
@@ -124,8 +125,8 @@ export default function ConnectionsAdminPage() {
   const fetchConnections = async () => {
     try {
       const res = await fetch(`${apiUrl}/api/admin/connections`);
-      const data = await res.json();
-      setConnections(data);
+      const json = await res.json();
+      setConnections(json.data || json);
     } catch (error) {
       console.error('Error fetching connections:', error);
     } finally {
@@ -136,8 +137,8 @@ export default function ConnectionsAdminPage() {
   const fetchStatements = async () => {
     try {
       const res = await fetch(`${apiUrl}/api/statements`);
-      const data = await res.json();
-      setStatements(data);
+      const json = await res.json();
+      setStatements(json.data || json);
     } catch (error) {
       console.error('Error fetching statements:', error);
     }
@@ -221,6 +222,9 @@ export default function ConnectionsAdminPage() {
       {/* CSS Styles for select options */}
       <style jsx>{selectStyles}</style>
       
+      {/* Admin Navigation */}
+      <AdminNav />
+      
       {/* Header */}
       <header className="bg-white shadow">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -238,12 +242,6 @@ export default function ConnectionsAdminPage() {
               >
                 + Nueva Conexión
               </button>
-              <Link
-                href="/admin"
-                className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors"
-              >
-                ← Volver al Admin
-              </Link>
             </div>
           </div>
         </div>

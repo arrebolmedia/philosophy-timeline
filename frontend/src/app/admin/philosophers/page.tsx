@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import AdminNav from '@/components/layout/AdminNav';
 
 interface Philosopher {
   id: number;
@@ -9,9 +10,13 @@ interface Philosopher {
   slug: string;
   birthYear: number;
   deathYear: number;
-  era?: string;
-  school?: string;
+  nationality?: string;
+  schoolId?: number;
+  periodId?: number;
+  bioShort?: string;
+  bioLong?: string;
   imageUrl?: string;
+  wikipediaUrl?: string;
 }
 
 export default function PhilosophersAdmin() {
@@ -38,8 +43,8 @@ export default function PhilosophersAdmin() {
   const fetchPhilosophers = async () => {
     try {
       const res = await fetch(`${apiUrl}/api/philosophers`);
-      const data = await res.json();
-      setPhilosophers(data);
+      const json = await res.json();
+      setPhilosophers(json.data || json);
     } catch (error) {
       console.error('Error fetching philosophers:', error);
     } finally {
@@ -55,9 +60,8 @@ export default function PhilosophersAdmin() {
       slug: formData.get('slug') as string,
       birthYear: parseInt(formData.get('birthYear') as string),
       deathYear: parseInt(formData.get('deathYear') as string),
-      era: formData.get('era') as string,
-      school: formData.get('school') as string,
-      imageUrl: formData.get('imageUrl') as string,
+      bioShort: formData.get('bioShort') as string || undefined,
+      imageUrl: formData.get('imageUrl') as string || undefined,
     };
 
     try {
@@ -70,14 +74,18 @@ export default function PhilosophersAdmin() {
         body: JSON.stringify(data),
       });
 
-      if (!res.ok) throw new Error('Error saving philosopher');
+      if (!res.ok) {
+        const errorData = await res.json();
+        console.error('Error response:', errorData);
+        throw new Error(errorData.message || 'Error saving philosopher');
+      }
       
       setEditingId(null);
       setIsCreating(false);
       fetchPhilosophers();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving philosopher:', error);
-      alert('Error al guardar el filósofo');
+      alert(`Error al guardar el filósofo: ${error.message}`);
     }
   };
 
@@ -107,6 +115,8 @@ export default function PhilosophersAdmin() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <AdminNav />
+      
       <header className="bg-white shadow">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex justify-between items-center">
@@ -121,9 +131,6 @@ export default function PhilosophersAdmin() {
               >
                 + Nuevo Filósofo
               </button>
-              <Link href="/admin" className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors">
-                ← Volver al Admin
-              </Link>
             </div>
           </div>
         </div>
@@ -163,13 +170,9 @@ export default function PhilosophersAdmin() {
                   <label className="block text-sm font-medium text-gray-700 mb-1">Año Muerte *</label>
                   <input type="number" name="deathYear" required className="w-full px-3 py-2 border border-gray-300 rounded-md" />
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Era</label>
-                  <input type="text" name="era" className="w-full px-3 py-2 border border-gray-300 rounded-md" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Escuela</label>
-                  <input type="text" name="school" className="w-full px-3 py-2 border border-gray-300 rounded-md" />
+                <div className="col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Biografía Corta</label>
+                  <input type="text" name="bioShort" className="w-full px-3 py-2 border border-gray-300 rounded-md" />
                 </div>
                 <div className="col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-1">URL Imagen</label>
@@ -199,7 +202,7 @@ export default function PhilosophersAdmin() {
                     <p className="text-sm text-gray-600">
                       {p.birthYear < 0 ? `${Math.abs(p.birthYear)} BCE` : p.birthYear} – {p.deathYear < 0 ? `${Math.abs(p.deathYear)} BCE` : p.deathYear}
                     </p>
-                    {p.school && <p className="text-sm text-gray-500 mt-1">{p.school}</p>}
+                    {p.bioShort && <p className="text-sm text-gray-500 mt-1">{p.bioShort}</p>}
                   </div>
                   <div className="flex gap-2">
                     <button
@@ -236,13 +239,9 @@ export default function PhilosophersAdmin() {
                         <label className="block text-sm font-medium text-gray-700 mb-1">Año Muerte *</label>
                         <input type="number" name="deathYear" defaultValue={p.deathYear} required className="w-full px-3 py-2 border border-gray-300 rounded-md" />
                       </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Era</label>
-                        <input type="text" name="era" defaultValue={p.era || ''} className="w-full px-3 py-2 border border-gray-300 rounded-md" />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Escuela</label>
-                        <input type="text" name="school" defaultValue={p.school || ''} className="w-full px-3 py-2 border border-gray-300 rounded-md" />
+                      <div className="col-span-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Biografía Corta</label>
+                        <input type="text" name="bioShort" defaultValue={p.bioShort || ''} className="w-full px-3 py-2 border border-gray-300 rounded-md" />
                       </div>
                       <div className="col-span-2">
                         <label className="block text-sm font-medium text-gray-700 mb-1">URL Imagen</label>

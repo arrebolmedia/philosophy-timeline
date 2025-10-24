@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import AdminNav from '@/components/layout/AdminNav';
 
 interface Statement {
   id: number;
@@ -57,8 +58,8 @@ export default function StatementsAdmin() {
       ]);
       const stmtData = await stmtRes.json();
       const philoData = await philoRes.json();
-      setStatements(stmtData);
-      setPhilosophers(philoData);
+      setStatements(stmtData.data || stmtData);
+      setPhilosophers(philoData.data || philoData);
     } catch (error) {
       console.error('Error fetching data:', error);
     } finally {
@@ -121,6 +122,8 @@ export default function StatementsAdmin() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <AdminNav />
+      
       <header className="bg-white shadow">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex justify-between items-center">
@@ -135,9 +138,6 @@ export default function StatementsAdmin() {
               >
                 + Nuevo Statement
               </button>
-              <Link href="/admin" className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors">
-                ← Volver al Admin
-              </Link>
             </div>
           </div>
         </div>
