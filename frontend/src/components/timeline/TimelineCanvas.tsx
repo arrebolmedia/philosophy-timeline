@@ -431,6 +431,9 @@ export function TimelineCanvas() {
 
     const svg = d3.select(svgRef.current);
     
+    // Save previous filter state before updating
+    const wasFilterActive = filterActiveRef.current;
+    
     // Update ref to indicate if filter is active
     filterActiveRef.current = !!(filteredPhilosopher || filteredStatement);
     
@@ -641,6 +644,7 @@ export function TimelineCanvas() {
                 // Calculate offset from original philosopher position
                 const offsetX = d.x - origPhiloX;
                 const offsetY = d.y - origPhiloY;
+                
                 return `translate(${philoPos.x + offsetX}, ${philoPos.y + offsetY})`;
               }
             }
@@ -811,7 +815,7 @@ export function TimelineCanvas() {
       svg.style('pointer-events', 'none');
       
       // Only restore zoom if we had a filter before (not just hover)
-      if (initialZoomRef.current && filterActiveRef.current) {
+      if (initialZoomRef.current && wasFilterActive) {
         svg.transition()
           .duration(400)
           .call(
@@ -1006,7 +1010,7 @@ export function TimelineCanvas() {
                 <span>scroll para zoom, mejor en Chrome desktop</span>
               </div>
               <div className="text-[10px] text-gray-400 pt-1">
-                trabajo en progreso v5.31, última actualización: {new Date().toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                v1.0, última actualización: {new Date().toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' })}
               </div>
             </div>
           </div>
