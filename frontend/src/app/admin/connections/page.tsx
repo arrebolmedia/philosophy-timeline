@@ -56,8 +56,10 @@ export default function ConnectionsAdminPage() {
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
   const [connections, setConnections] = useState<Connection[]>([]);
   const [filteredConnections, setFilteredConnections] = useState<Connection[]>([]);
+  const [statements, setStatements] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState<number | null>(null);
+  const [isCreating, setIsCreating] = useState(false);
   
   // Filtros
   const [searchTerm, setSearchTerm] = useState('');
@@ -66,6 +68,7 @@ export default function ConnectionsAdminPage() {
 
   useEffect(() => {
     fetchConnections();
+    fetchStatements();
   }, []);
 
   useEffect(() => {
@@ -127,6 +130,40 @@ export default function ConnectionsAdminPage() {
       console.error('Error fetching connections:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchStatements = async () => {
+    try {
+      const res = await fetch(`${apiUrl}/api/statements`);
+      const data = await res.json();
+      setStatements(data);
+    } catch (error) {
+      console.error('Error fetching statements:', error);
+    }
+  };
+
+  const handleCreateConnection = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    const data = {
+      statementFromId: parseInt(formData.get('statementFromId') as string),
+      statementToId: parseInt(formData.get('statementToId') as string),
+      connectionType: formData.get('connectionType') as string,
+    };
+
+    try {
+      const res = await fetch(`${apiUrl}/api/admin/connections`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) throw new Error('Error creating connection');
+      setIsCreating(false);
+      fetchConnections();
+    } catch (error) {
+      console.error('Error creating connection:', error);
+      alert('Error al crear la conexión');
     }
   };
 
@@ -194,18 +231,72 @@ export default function ConnectionsAdminPage() {
                 {connections.length} conexiones en total
               </p>
             </div>
-            <Link
-              href="/admin"
-              className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors"
-            >
-              ← Volver al Admin
-            </Link>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setIsCreating(true)}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+              >
+                + Nueva Conexión
+              </button>
+              <Link
+                href="/admin"
+                className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors"
+              >
+                ← Volver al Admin
+              </Link>
+            </div>
           </div>
         </div>
       </header>
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        {/* Create Form */}
+        {isCreating && (
+          <div className="bg-white rounded-lg shadow p-6 mb-6">
+            <h2 className="text-xl font-bold mb-4">Crear Nueva Conexión</h2>
+            <form onSubmit={handleCreateConnection} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Statement Origen *</label>
+                <select name="statementFromId" required className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm">
+                  <option value="">Seleccionar...</option>
+                  {statements.map(s => (
+                    <option key={s.id} value={s.id}>
+                      {s.philosopher.name}: {s.text.substring(0, 80)}...
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Statement Destino *</label>
+                <select name="statementToId" required className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm">
+                  <option value="">Seleccionar...</option>
+                  {statements.map(s => (
+                    <option key={s.id} value={s.id}>
+                      {s.philosopher.name}: {s.text.substring(0, 80)}...
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Tipo de Conexión *</label>
+                <select name="connectionType" required className="w-full px-3 py-2 border border-gray-300 rounded-md">
+                  <option value="agreement">Acuerdo, similitud o expansión</option>
+                  <option value="disagreement">Desacuerdo, contraste o refutación</option>
+                </select>
+              </div>
+              <div className="flex gap-3">
+                <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+                  Crear
+                </button>
+                <button type="button" onClick={() => setIsCreating(false)} className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300">
+                  Cancelar
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
         
         {/* Filtros y Búsqueda */}
         <div className="bg-white rounded-lg shadow p-6 mb-6">

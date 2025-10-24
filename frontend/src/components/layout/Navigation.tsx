@@ -16,6 +16,14 @@ const navigation = [
 export function Navigation() {
   const pathname = usePathname();
   const [isScrolled, setIsScrolled] = useState(false);
+  
+  // Hide navigation on all admin pages
+  if (pathname?.startsWith('/admin/')) {
+    return null;
+  }
+  
+  // Check if we're on an admin page
+  const isAdminPage = pathname?.startsWith('/admin');
 
   useEffect(() => {
     const handleScroll = () => {
@@ -26,18 +34,21 @@ export function Navigation() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  // Admin pages always show solid navigation, home page uses transparent on scroll
+  const shouldBeTransparent = !isAdminPage && !isScrolled;
+
   return (
     <nav className={`fixed top-0 w-full z-50 transition-all duration-300 ${
-      isScrolled 
-        ? 'border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 shadow-sm' 
-        : 'bg-transparent border-transparent'
+      shouldBeTransparent
+        ? 'bg-transparent border-transparent' 
+        : 'border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 shadow-sm'
     }`}>
       <div className="container mx-auto px-4">
         <div className="flex h-16 items-center justify-between">
           {/* Logo */}
           <Link href="/" className="flex items-center space-x-2">
-            <BookOpen className={`h-6 w-6 transition-colors ${isScrolled ? 'text-primary' : 'text-white'}`} />
-            <span className={`font-bold text-xl font-serif transition-colors ${isScrolled ? 'text-foreground' : 'text-white'}`}>
+            <BookOpen className={`h-6 w-6 transition-colors ${shouldBeTransparent ? 'text-white' : 'text-primary'}`} />
+            <span className={`font-bold text-xl font-serif transition-colors ${shouldBeTransparent ? 'text-white' : 'text-foreground'}`}>
               Historia de la Filosofía
             </span>
           </Link>
@@ -52,9 +63,9 @@ export function Navigation() {
               return (
                 <Link key={item.name} href={item.href}>
                   <Button
-                    variant={!isScrolled ? 'ghost' : (isActive ? 'default' : 'ghost')}
+                    variant={shouldBeTransparent ? 'ghost' : (isActive ? 'default' : 'ghost')}
                     className={`flex items-center gap-2 transition-colors ${
-                      !isScrolled ? 'text-white hover:text-white hover:bg-white/10' : ''
+                      shouldBeTransparent ? 'text-white hover:text-white hover:bg-white/10' : ''
                     }`}
                   >
                     <Icon className="h-4 w-4" />
