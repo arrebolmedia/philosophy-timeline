@@ -11,6 +11,8 @@ export function TimelineCanvas() {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const svgRef = useRef<SVGSVGElement | null>(null);
   const zoomRef = useRef<any>(null);
+  const filterActiveRef = useRef<boolean>(false);
+  const initialZoomRef = useRef<any>(null);
   const [data, setData] = useState<TimelineData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -20,7 +22,6 @@ export function TimelineCanvas() {
   const [hoveredStatement, setHoveredStatement] = useState<number | null>(null);
   const [filteredPhilosopher, setFilteredPhilosopher] = useState<number | null>(null);
   const [filteredStatement, setFilteredStatement] = useState<number | null>(null);
-  const [isAnimating, setIsAnimating] = useState(false);
 
   useEffect(() => {
     const fetchTimelineData = async () => {
@@ -48,7 +49,13 @@ export function TimelineCanvas() {
     const width = containerRef.current.clientWidth;
     const height = containerRef.current.clientHeight;
 
-    svg.attr('width', width).attr('height', height).style('overflow', 'visible');
+    svg.attr('width', width)
+       .attr('height', height)
+       .style('overflow', 'visible')
+       .style('user-select', 'none')
+       .style('-webkit-user-select', 'none')
+       .style('-moz-user-select', 'none')
+       .style('-ms-user-select', 'none');
 
     // Create main group for zoom/pan transformations
     const g = svg.append('g').attr('class', 'main-group');
@@ -70,15 +77,15 @@ export function TimelineCanvas() {
     svg.on('click', (event) => {
       // Only clear if clicked directly on SVG (not on children)
       if (event.target === event.currentTarget) {
-        setIsAnimating(true);
         setFilteredPhilosopher(null);
         setFilteredStatement(null);
-        setTimeout(() => setIsAnimating(false), 600);
       }
     });
 
     // Set initial zoom to show content nicely
-    svg.call(zoom.transform as any, d3.zoomIdentity.translate(50, 50).scale(0.8));
+    const initialTransform = d3.zoomIdentity.translate(50, 50).scale(0.8);
+    initialZoomRef.current = initialTransform;
+    svg.call(zoom.transform as any, initialTransform);
 
     // Handle API response format which may have nested structure
     const philosophers: PhilosopherNode[] = [...(data.philosophers || [])].map((p: any) => {
@@ -195,17 +202,19 @@ export function TimelineCanvas() {
       .attr('transform', (d: any) => `translate(${d.x}, ${d.y})`)
       .style('cursor', 'pointer')
       .on('mouseenter', (event, d: any) => {
-        if (!isAnimating) setHoveredPhilosopher(d.id);
+        if (!filterActiveRef.current) {
+          setHoveredPhilosopher(d.id);
+        }
       })
       .on('mouseleave', () => {
-        if (!isAnimating) setHoveredPhilosopher(null);
+        if (!filterActiveRef.current) {
+          setHoveredPhilosopher(null);
+        }
       })
       .on('click', (event, d: any) => {
         event.stopPropagation();
-        setIsAnimating(true);
         setFilteredPhilosopher(prev => prev === d.id ? null : d.id);
         setFilteredStatement(null);
-        setTimeout(() => setIsAnimating(false), 600);
       });
 
     // Add invisible hit area FIRST (so it's behind visual elements but captures events)
@@ -302,17 +311,19 @@ export function TimelineCanvas() {
       .attr('transform', (d: any) => `translate(${d.x}, ${d.y})`)
       .style('cursor', 'pointer')
       .on('mouseenter', (event, d: any) => {
-        if (!isAnimating) setHoveredStatement(d.id);
+        if (!filterActiveRef.current) {
+          setHoveredStatement(d.id);
+        }
       })
       .on('mouseleave', () => {
-        if (!isAnimating) setHoveredStatement(null);
+        if (!filterActiveRef.current) {
+          setHoveredStatement(null);
+        }
       })
       .on('click', (event, d: any) => {
         event.stopPropagation();
-        setIsAnimating(true);
         setFilteredStatement(prev => prev === d.id ? null : d.id);
         setFilteredPhilosopher(null);
-        setTimeout(() => setIsAnimating(false), 600);
       });
 
     // Statement text (longer, single line)
@@ -418,6 +429,9 @@ export function TimelineCanvas() {
 
     const svg = d3.select(svgRef.current);
     
+    // Update ref to indicate if filter is active
+    filterActiveRef.current = !!(filteredPhilosopher || filteredStatement);
+    
     // Get all connections, statements, and philosophers for relationship logic
     const connections = data?.connections || [];
     const statements = data?.statements || [];
@@ -502,7 +516,9 @@ export function TimelineCanvas() {
     }
 
     // Apply opacity changes
-    const isActive = hoveredPhilosopher || hoveredStatement || filteredPhilosopher || filteredStatement;
+    const hasFilter = filteredPhilosopher || filteredStatement;
+    const hasHover = hoveredPhilosopher || hoveredStatement;
+    const isActive = hasFilter || hasHover;
     
     if (isActive) {
       // On FILTER by statement (click), reorganize in compact staircase layout
@@ -542,6 +558,44 @@ export function TimelineCanvas() {
           cumulativeY += compactBaseStepY + (activeStmtCount * compactStatementSpacing);
         });
         
+        // Calculate bounding box of the grouped content
+        const positions = Array.from(newPositions.values());
+        if (positions.length > 0) {
+          const minX = Math.min(...positions.map(p => p.x)) - 100;
+          const maxX = Math.max(...positions.map(p => p.x)) + 300;
+          const minY = Math.min(...positions.map(p => p.y)) - 50;
+          const maxY = cumulativeY + 50;
+          
+          const width = maxX - minX;
+          const height = maxY - minY;
+          const centerX = minX + width / 2;
+          const centerY = minY + height / 2;
+          
+          // Calculate scale to fit content (with some padding)
+          const svgWidth = containerRef.current?.clientWidth || 1200;
+          const svgHeight = containerRef.current?.clientHeight || 800;
+          const scaleX = svgWidth / width;
+          const scaleY = svgHeight / height;
+          const scale = Math.min(scaleX, scaleY, 1.2); // Max zoom 1.2x
+          
+          // Calculate translation to center the content
+          const translateX = svgWidth / 2 - centerX * scale;
+          const translateY = svgHeight / 2 - centerY * scale;
+          
+          // Apply zoom transition
+          svg.transition()
+            .duration(500)
+            .call(
+              zoomRef.current.transform,
+              d3.zoomIdentity.translate(translateX, translateY).scale(scale)
+            );
+        }
+        
+        // Disable hover events during animation
+        setHoveredPhilosopher(null);
+        setHoveredStatement(null);
+        svg.style('pointer-events', 'none');
+        
         // Move philosophers to compact positions, hide others
         svg.selectAll('.philosopher-label')
           .transition()
@@ -555,6 +609,10 @@ export function TimelineCanvas() {
               }
             }
             return `translate(${d.x}, ${d.y})`;
+          })
+          .on('end', function() {
+            // Re-enable pointer events after last transition ends
+            svg.style('pointer-events', 'auto');
           });
         
         // Move statements with their philosophers, hide others
@@ -676,10 +734,18 @@ export function TimelineCanvas() {
         
       } else if (filteredPhilosopher) {
         // FILTER by philosopher: just hide others, don't move
+        // Disable hover events during animation
+        setHoveredPhilosopher(null);
+        setHoveredStatement(null);
+        svg.style('pointer-events', 'none');
+        
         svg.selectAll('.philosopher-label')
           .transition()
           .duration(400)
-          .style('opacity', (d: any) => activePhilosophers.has(d.id) ? 1 : 0);
+          .style('opacity', (d: any) => activePhilosophers.has(d.id) ? 1 : 0)
+          .on('end', function() {
+            svg.style('pointer-events', 'auto');
+          });
 
         svg.selectAll('.statement')
           .transition()
@@ -692,8 +758,8 @@ export function TimelineCanvas() {
           .duration(300)
           .style('opacity', 0);
         
-      } else {
-        // HOVER mode: just fade, don't move
+      } else if (hasHover && !hasFilter) {
+        // HOVER mode: just fade, don't move (only when NOT filtered)
         svg.selectAll('.philosopher-label')
           .transition()
           .duration(400)
@@ -734,11 +800,29 @@ export function TimelineCanvas() {
       }
     } else {
       // Reset all to normal
+      // Disable hover events during animation
+      setHoveredPhilosopher(null);
+      setHoveredStatement(null);
+      svg.style('pointer-events', 'none');
+      
+      // Restore initial zoom
+      if (initialZoomRef.current) {
+        svg.transition()
+          .duration(400)
+          .call(
+            zoomRef.current.transform,
+            initialZoomRef.current
+          );
+      }
+      
       svg.selectAll('.philosopher-label')
         .transition()
         .duration(400)
         .style('opacity', 1)
-        .attr('transform', (d: any) => `translate(${d.x}, ${d.y})`);
+        .attr('transform', (d: any) => `translate(${d.x}, ${d.y})`)
+        .on('end', function() {
+          svg.style('pointer-events', 'auto');
+        });
 
       svg.selectAll('.statement')
         .transition()
