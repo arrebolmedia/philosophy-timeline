@@ -114,7 +114,7 @@ export default function AdminPage() {
           </div>
         </div>
 
-        {/* Info Section */}
+        {/* Info Section - COMMENTED OUT (Feature not implemented yet)
         <div className="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-6">
           <div className="flex items-start">
             <svg className="w-6 h-6 text-blue-600 mt-0.5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -137,6 +137,7 @@ export default function AdminPage() {
             </div>
           </div>
         </div>
+        */}
       </main>
     </div>
   );

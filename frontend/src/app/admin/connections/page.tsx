@@ -28,13 +28,17 @@ interface Connection {
   id: number;
   connectionType: string;
   explanation?: string;
-  sourceType?: string;
-  sourceTitle?: string;
-  sourceAuthor?: string;
-  sourceYear?: number;
-  sourcePages?: string;
-  sourceUrl?: string;
-  confidence: number;
+  // Campos para fuentes académicas (pendiente de implementar en UI)
+  // Tipos de fuente: libro, artículo, enciclopedia, fuente primaria
+  // Nivel de confianza: 1-5 (1=especulativa, 5=bien documentada)
+  // Fuentes recomendadas: Stanford Encyclopedia of Philosophy (SEP), Kirk-Raven-Schofield, Barnes
+  sourceType?: string;        // Tipo de fuente académica
+  sourceTitle?: string;        // Título de la obra o artículo
+  sourceAuthor?: string;       // Autor de la fuente
+  sourceYear?: number;         // Año de publicación
+  sourcePages?: string;        // Páginas específicas citadas
+  sourceUrl?: string;          // URL de referencia
+  confidence: number;          // Nivel de confianza (1-5)
   statementFrom: {
     id: number;
     text: string;
