@@ -2,7 +2,8 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Users, FileText, GitBranch, LayoutDashboard } from 'lucide-react';
+import { signOut } from 'next-auth/react';
+import { Users, FileText, GitBranch, LayoutDashboard, LogOut } from 'lucide-react';
 
 export default function AdminNav() {
   const pathname = usePathname();
@@ -69,16 +70,26 @@ export default function AdminNav() {
             </div>
           </div>
 
-          {/* Back to Site Link */}
-          <Link
-            href="/"
-            className="text-sm text-gray-600 hover:text-gray-900 transition-colors flex items-center space-x-1"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-            </svg>
-            <span>Volver al Timeline</span>
-          </Link>
+          {/* Actions */}
+          <div className="flex items-center space-x-3">
+            <Link
+              href="/"
+              className="text-sm text-gray-600 hover:text-gray-900 transition-colors flex items-center space-x-1"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              </svg>
+              <span>Timeline</span>
+            </Link>
+            
+            <button
+              onClick={() => signOut({ callbackUrl: '/admin/login' })}
+              className="text-sm text-red-600 hover:text-red-700 transition-colors flex items-center space-x-1 px-3 py-1.5 rounded-md hover:bg-red-50"
+            >
+              <LogOut className="w-4 h-4" />
+              <span>Salir</span>
+            </button>
+          </div>
         </div>
 
         {/* Mobile Navigation */}

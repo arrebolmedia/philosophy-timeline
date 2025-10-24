@@ -3,6 +3,7 @@ import type { Metadata } from 'next'
 import { Inter, Crimson_Text, Playfair_Display, Poppins } from 'next/font/google'
 import { ThemeProvider } from '@/components/providers/theme-provider'
 import { QueryProvider } from '@/components/providers/query-provider'
+import { AuthProvider } from '@/components/providers/auth-provider'
 import { Toaster } from '@/components/ui/toaster'
 import { Navigation } from '@/components/layout/Navigation'
 
@@ -93,22 +94,24 @@ export default function RootLayout({
   return (
     <html lang="es" suppressHydrationWarning>
       <body className={`${inter.variable} ${crimsonText.variable} ${playfairDisplay.variable} ${poppins.variable} font-sans antialiased`}>
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        >
-          <QueryProvider>
-            <div className="relative flex min-h-screen flex-col">
-              <Navigation />
-              <div className="flex-1">
-                {children}
+        <AuthProvider>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            disableTransitionOnChange
+          >
+            <QueryProvider>
+              <div className="relative flex min-h-screen flex-col">
+                <Navigation />
+                <div className="flex-1">
+                  {children}
+                </div>
               </div>
-            </div>
-            <Toaster />
-          </QueryProvider>
-        </ThemeProvider>
+              <Toaster />
+            </QueryProvider>
+          </ThemeProvider>
+        </AuthProvider>
       </body>
     </html>
   )
