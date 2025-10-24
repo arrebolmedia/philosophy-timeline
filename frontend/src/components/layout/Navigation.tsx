@@ -17,11 +17,6 @@ export function Navigation() {
   const pathname = usePathname();
   const [isScrolled, setIsScrolled] = useState(false);
   
-  // Hide navigation on all admin pages
-  if (pathname?.startsWith('/admin/')) {
-    return null;
-  }
-  
   // Check if we're on an admin page
   const isAdminPage = pathname?.startsWith('/admin');
 
@@ -33,6 +28,11 @@ export function Navigation() {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  // Hide navigation on all admin pages
+  if (pathname?.startsWith('/admin/')) {
+    return null;
+  }
 
   // Admin pages always show solid navigation, home page uses transparent on scroll
   const shouldBeTransparent = !isAdminPage && !isScrolled;
