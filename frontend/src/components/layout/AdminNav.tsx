@@ -40,12 +40,12 @@ export default function AdminNav() {
         <div className="flex items-center justify-between h-16">
           {/* Logo/Title */}
           <div className="flex items-center space-x-8">
-            <Link href="/admin" className="flex items-center space-x-2">
+            <div className="flex items-center space-x-2">
               <div className="w-8 h-8 bg-gradient-to-br from-primary to-primary/80 rounded-lg flex items-center justify-center">
                 <span className="text-white font-bold text-sm">Φ</span>
               </div>
               <span className="font-semibold text-gray-900">Admin Panel</span>
-            </Link>
+            </div>
 
             {/* Navigation Links */}
             <div className="hidden md:flex space-x-1">

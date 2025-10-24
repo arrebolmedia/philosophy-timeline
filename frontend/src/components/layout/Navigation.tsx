@@ -30,7 +30,7 @@ export function Navigation() {
   }, []);
 
   // Hide navigation on all admin pages
-  if (pathname?.startsWith('/admin/')) {
+  if (pathname?.startsWith('/admin')) {
     return null;
   }
 
