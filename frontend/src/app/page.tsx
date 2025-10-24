@@ -1,3 +1,5 @@
+'use client';
+
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -13,39 +15,56 @@ import {
   Github,
   Star
 } from 'lucide-react'
+import { useState, useEffect } from 'react'
 
 export default function HomePage() {
+  const [showContent, setShowContent] = useState(false);
+  const fullText = "Historia de la\nFilosofía";
+  const [displayedText, setDisplayedText] = useState("");
+  const [currentIndex, setCurrentIndex] = useState(0);
+  
+  useEffect(() => {
+    if (currentIndex < fullText.length) {
+      const timeout = setTimeout(() => {
+        setDisplayedText(prev => prev + fullText[currentIndex]);
+        setCurrentIndex(prev => prev + 1);
+      }, 80);
+      return () => clearTimeout(timeout);
+    } else {
+      // Cuando termina el typing, mostrar el resto del contenido
+      setTimeout(() => setShowContent(true), 300);
+    }
+  }, [currentIndex, fullText]);
+
   return (
     <div className="flex flex-col min-h-screen">
       {/* Hero Section */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-philosophy-ancient/10 via-philosophy-renaissance/10 to-philosophy-contemporary/10 py-20 lg:py-32">
-        <div className="container mx-auto px-4">
-          <div className="text-center">
-            <Badge variant="secondary" className="mb-4">
-              Inspirado en el trabajo de Deniz Cem Önduygu
-            </Badge>
-            <h1 className="text-4xl font-bold tracking-tight sm:text-6xl">
-              Historia de la 
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-philosophy-ancient to-philosophy-contemporary">
-                {" "}Filosofía
+      <section className="relative min-h-screen flex items-center justify-center">
+        <div className="container mx-auto px-4 max-w-5xl">
+          <div className="text-center space-y-8">
+            <h1 className="text-7xl sm:text-8xl lg:text-9xl font-bold tracking-tight leading-none font-[family-name:var(--font-playfair)] text-black min-h-[200px] sm:min-h-[300px] lg:min-h-[400px] flex items-center justify-center">
+              <span className="whitespace-pre-line">
+                {displayedText}
+                {currentIndex < fullText.length && (
+                  <span className="animate-pulse">|</span>
+                )}
               </span>
             </h1>
-            <p className="mt-6 text-lg leading-8 text-muted-foreground max-w-2xl mx-auto">
-              Explora 2600 años de filosofía occidental a través de una visualización interactiva 
-              que conecta ideas, argumentos y pensadores a lo largo del tiempo.
-            </p>
-            <div className="mt-10 flex items-center justify-center gap-6">
-              <Link href="/filosofos">
-                <Button size="lg" className="group">
-                  Explorar Filósofos
-                  <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
-                </Button>
-              </Link>
-              <Link href="/timeline">
-                <Button variant="outline" size="lg">
-                  Ver Timeline
-                </Button>
-              </Link>
+            
+            <div className={`transition-all duration-1000 ${showContent ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+              <p className="text-xl sm:text-2xl text-gray-600 font-light max-w-2xl mx-auto font-[family-name:var(--font-poppins)]">
+                resumida y visualizada
+              </p>
+              
+              {/* CTA */}
+              <div className="pt-8">
+                <Link href="/timeline">
+                  <Button size="lg" variant="outline" className="group text-base px-8 py-6 h-auto font-[family-name:var(--font-poppins)]">
+                    Explorar Timeline
+                    <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
+                  </Button>
+                </Link>
+              </div>
             </div>
           </div>
         </div>

@@ -1,6 +1,6 @@
 import './globals.css'
 import type { Metadata } from 'next'
-import { Inter, Crimson_Text } from 'next/font/google'
+import { Inter, Crimson_Text, Playfair_Display, Poppins } from 'next/font/google'
 import { ThemeProvider } from '@/components/providers/theme-provider'
 import { QueryProvider } from '@/components/providers/query-provider'
 import { Toaster } from '@/components/ui/toaster'
@@ -15,6 +15,18 @@ const crimsonText = Crimson_Text({
   weight: ['400', '600'],
   subsets: ['latin'],
   variable: '--font-crimson',
+})
+
+const playfairDisplay = Playfair_Display({ 
+  weight: ['700', '900'],
+  subsets: ['latin'],
+  variable: '--font-playfair',
+})
+
+const poppins = Poppins({ 
+  weight: ['300', '400', '500', '600'],
+  subsets: ['latin'],
+  variable: '--font-poppins',
 })
 
 export const metadata: Metadata = {
@@ -80,7 +92,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="es" suppressHydrationWarning>
-      <body className={`${inter.variable} ${crimsonText.variable} font-sans antialiased`}>
+      <body className={`${inter.variable} ${crimsonText.variable} ${playfairDisplay.variable} ${poppins.variable} font-sans antialiased`}>
         <ThemeProvider
           attribute="class"
           defaultTheme="system"

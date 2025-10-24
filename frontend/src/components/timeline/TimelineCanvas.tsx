@@ -65,6 +65,8 @@ export function TimelineCanvas() {
       .scaleExtent([0.1, 4]) // Allow zoom from 10% to 400%
       .on('zoom', (event) => {
         g.attr('transform', event.transform);
+        // Track last zoom time to prevent click events during/after zoom
+        (svg.node() as any).__lastZoomTime = Date.now();
       });
 
     // Store zoom reference for programmatic control
@@ -520,6 +522,9 @@ export function TimelineCanvas() {
     const hasHover = hoveredPhilosopher || hoveredStatement;
     const isActive = hasFilter || hasHover;
     
+    // Only restore zoom if we're clearing a FILTER, not just hover
+    const shouldRestoreZoom = !hasFilter && !hasHover;
+    
     if (isActive) {
       // On FILTER by statement (click), reorganize in compact staircase layout
       if (filteredStatement) {
@@ -805,8 +810,8 @@ export function TimelineCanvas() {
       setHoveredStatement(null);
       svg.style('pointer-events', 'none');
       
-      // Restore initial zoom
-      if (initialZoomRef.current) {
+      // Only restore zoom if we had a filter before (not just hover)
+      if (initialZoomRef.current && filterActiveRef.current) {
         svg.transition()
           .duration(400)
           .call(
@@ -967,10 +972,43 @@ export function TimelineCanvas() {
           </Button>
         </div>
 
-        {/* Instruction hint */}
-        <div className="absolute bottom-4 left-4 z-10 bg-white/90 backdrop-blur px-3 py-2 rounded shadow-sm">
-          <div className="text-xs text-gray-600">
-            <span className="font-medium">💡 Controles:</span> Scroll para zoom · Arrastra para mover · Click en declaración para resaltar
+        {/* Legend and info */}
+        <div className="absolute bottom-4 left-4 z-10 bg-white/95 backdrop-blur px-4 py-3 rounded-lg shadow-md border border-gray-200">
+          <div className="space-y-2">
+            <div className="font-bold text-sm text-gray-900">HISTORIA DE LA FILOSOFÍA</div>
+            <div className="text-xs text-gray-600">resumida y visualizada</div>
+            
+            {/* Color legend */}
+            <div className="pt-2 space-y-1.5 border-t border-gray-200">
+              <div className="flex items-center gap-2 text-xs">
+                <div className="w-6 h-0.5 bg-red-300 rounded"></div>
+                <span className="text-gray-600">desacuerdo, contraste, refutación</span>
+              </div>
+              <div className="flex items-center gap-2 text-xs">
+                <div className="w-6 h-0.5 bg-green-300 rounded"></div>
+                <span className="text-gray-600">acuerdo, similaridad, expansión</span>
+              </div>
+            </div>
+            
+            {/* Instructions and date */}
+            <div className="pt-2 text-xs text-gray-500 border-t border-gray-100 space-y-1">
+              <div className="flex items-center gap-2">
+                <svg className="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 11.5V14m0-2.5v-6a1.5 1.5 0 113 0m-3 6a1.5 1.5 0 00-3 0v2a7.5 7.5 0 0015 0v-5a1.5 1.5 0 00-3 0m-6-3V11m0-5.5v-1a1.5 1.5 0 013 0v1m0 0V11m0-5.5a1.5 1.5 0 013 0v3m0 0V11" />
+                </svg>
+                <span>arrastra para mover</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <svg className="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <circle cx="11" cy="11" r="8" strokeWidth={2}/>
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35"/>
+                </svg>
+                <span>scroll para zoom, mejor en Chrome desktop</span>
+              </div>
+              <div className="text-[10px] text-gray-400 pt-1">
+                trabajo en progreso v5.31, última actualización: {new Date().toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+              </div>
+            </div>
           </div>
         </div>
 
