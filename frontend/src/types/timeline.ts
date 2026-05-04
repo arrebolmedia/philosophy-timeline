@@ -69,7 +69,10 @@ export type ConnectionType =
   | 'disagreement' 
   | 'expansion' 
   | 'refutation' 
-  | 'inspiration';
+  | 'inspiration'
+  | 'oppose'
+  | 'influence'
+  | 'resonate';
 
 export interface TimelineFilter {
   periodId?: number;

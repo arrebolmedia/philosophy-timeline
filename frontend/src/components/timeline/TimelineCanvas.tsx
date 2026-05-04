@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState, useCallback } from 'react';
+import { APP_VERSION } from '@/version';
 import * as d3 from 'd3';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -13,6 +14,7 @@ export function TimelineCanvas() {
   const zoomRef = useRef<any>(null);
   const filterActiveRef = useRef<boolean>(false);
   const initialZoomRef = useRef<any>(null);
+  const filterTimestampRef = useRef<number>(0);
   const [data, setData] = useState<TimelineData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -29,7 +31,9 @@ export function TimelineCanvas() {
         const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/timeline`);
         if (!response.ok) throw new Error('Error al cargar datos');
         const result = await response.json();
-        setData(result.data as TimelineData);
+        const raw = result.data;
+        const flatStatements = (raw.philosophers || []).flatMap((p: any) => p.statements || []);
+        setData({ ...raw, statements: flatStatements } as TimelineData);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Error desconocido');
       } finally {
@@ -145,52 +149,43 @@ export function TimelineCanvas() {
         case 'agreement':
         case 'expansion':
         case 'inspiration':
-          return '#a7f3d0'; // Light green, pastel tone (green-200)
+        case 'influence':
+        case 'resonate':
+          return '#a7f3d0'; // green
         case 'disagreement':
         case 'refutation':
-          return '#fecaca'; // Light red, pastel tone (red-200)
+        case 'oppose':
+          return '#fecaca'; // red
         default:
-          return '#d1d5db'; // Light gray (gray-300)
+          return '#d1d5db'; // gray
       }
     };
 
-    // TRUE semicircle path - literally half of a circle
+    // Perfect 180° semicircle arcs using SVG arc command.
+    // Green (positive): sweeps above the chord (sweep-flag=0, upward arc).
+    // Red (negative): sweeps below the chord (sweep-flag=1, downward arc).
     const pathFor = (c: ConnectionLink) => {
       const from = statements.find(s => s.id === c.statementFromId);
-      const to = statements.find(s => s.id === c.statementToId);
-      if (!from || !to) {
-        console.log('Connection missing statement:', c.statementFromId, c.statementToId);
-        return '';
-      }
-      
+      const to   = statements.find(s => s.id === c.statementToId);
+      if (!from || !to) return '';
+      const isRed = ['disagreement','refutation','oppose'].includes(c.connectionType as string);
       const x1 = (from.x || 0) - 10;
-      const y1 = from.y || 0;
+      const y1 = (from.y || 0) - 4;
       const x2 = (to.x || 0) - 10;
-      const y2 = to.y || 0;
-      
-      // Calculate distance - this will be the diameter of the circle
-      const dx = x2 - x1;
-      const dy = y2 - y1;
-      const distance = Math.sqrt(dx * dx + dy * dy);
-      
-      // Radius is half the distance (diameter / 2)
-      const radius = distance / 2;
-      
-      // SVG Arc command: A rx ry x-axis-rotation large-arc-flag sweep-flag x y
-      // large-arc-flag: 0 = smaller arc, 1 = larger arc
-      // sweep-flag: 0 = counterclockwise, 1 = clockwise
-      // For a perfect semicircle, we want: large-arc=0, sweep alternates for direction
-      
-      // Alternate sweep direction based on connection type
-      const sweep = (c.connectionType === 'disagreement' || c.connectionType === 'refutation') ? 0 : 1;
-      
-      // Arc: radius-x radius-y rotation large-arc-flag sweep-flag end-x end-y
-      console.log(`Semicircle: (${x1},${y1}) -> (${x2},${y2}), radius=${radius.toFixed(0)}, sweep=${sweep}`);
-      return `M ${x1} ${y1} A ${radius} ${radius} 0 0 ${sweep} ${x2} ${y2}`;
+      const y2 = (to.y || 0) - 4;
+      const dx = x2 - x1, dy = y2 - y1;
+      const r = Math.sqrt(dx * dx + dy * dy) / 2;
+      // Direction-aware sweep: going right (dx>=0) sweep=1→above, sweep=0→below
+      //                        going left  (dx<0)  sweep=0→above, sweep=1→below
+      const aboveSweep = dx >= 0 ? 1 : 0;
+      const sweep = isRed ? 1 - aboveSweep : aboveSweep;
+      return `M ${x1} ${y1} A ${r} ${r} 0 0 ${sweep} ${x2} ${y2}`;
     };
 
     connG.selectAll('path.connection').data(conns, (d: any) => d.id).enter().append('path')
       .attr('class', 'connection')
+      .attr('data-from', (d: any) => d.statementFromId)
+      .attr('data-to', (d: any) => d.statementToId)
       .attr('d', (d: any) => pathFor(d))
       .attr('fill', 'none')
       .attr('stroke', (d: any) => colorFor(d.connectionType))
@@ -329,7 +324,7 @@ export function TimelineCanvas() {
       });
 
     // Statement text (longer, single line)
-    stmtNodes.append('text').attr('x', 0).attr('y', 0).text((d: any) => truncate(d.text, 120))
+    stmtNodes.append('text').attr('x', 0).attr('y', 0).text((d: any) => truncate(d.text, 200))
       .style('font-size', '11px').style('fill', '#222');
 
     // Tags inline, smaller
@@ -348,26 +343,26 @@ export function TimelineCanvas() {
       if (relatedConnections.length === 0) {
         // No connections - gray dot
         d3.select(this).append('circle')
-          .attr('cx', -10).attr('cy', 0).attr('r', 3)
+          .attr('cx', -10).attr('cy', -4).attr('r', 3)
           .attr('fill', '#d1d5db').attr('opacity', 1);
       } else {
         // Count positive vs negative connections
         const positiveCount = relatedConnections.filter((c: ConnectionLink) => 
-          c.connectionType === 'agreement' || c.connectionType === 'expansion' || c.connectionType === 'inspiration'
+          ['agreement','expansion','inspiration','influence','resonate'].includes(c.connectionType as string)
         ).length;
         const negativeCount = relatedConnections.filter((c: ConnectionLink) => 
-          c.connectionType === 'disagreement' || c.connectionType === 'refutation'
+          ['disagreement','refutation','oppose'].includes(c.connectionType as string) || c.connectionType === 'oppose'
         ).length;
         
         if (positiveCount > 0 && negativeCount === 0) {
           // Only positive - green dot
           d3.select(this).append('circle')
-            .attr('cx', -10).attr('cy', 0).attr('r', 3)
+            .attr('cx', -10).attr('cy', -4).attr('r', 3)
             .attr('fill', '#a7f3d0').attr('opacity', 1);
         } else if (negativeCount > 0 && positiveCount === 0) {
           // Only negative - red dot
           d3.select(this).append('circle')
-            .attr('cx', -10).attr('cy', 0).attr('r', 3)
+            .attr('cx', -10).attr('cy', -4).attr('r', 3)
             .attr('fill', '#fecaca').attr('opacity', 1);
         } else if (positiveCount > 0 && negativeCount > 0) {
           // Both - split half green, half red using a gradient or two half-circles
@@ -462,16 +457,26 @@ export function TimelineCanvas() {
     let activeConnections = new Set<string>();
 
     if (filteredPhilosopher) {
-      // Filter mode: only show this philosopher and their statements
+      // Show clicked philosopher + all philosophers connected to its statements
       activePhilosophers.add(filteredPhilosopher);
+      const myStatements = new Set<number>();
       svg.selectAll('.statement').each(function(d: any) {
         if (d.philosopherId === filteredPhilosopher) {
+          myStatements.add(d.id);
           activeStatements.add(d.id);
         }
       });
-      
-      // Don't show any connections when filtering by philosopher
-      // (connections are between statements, not philosophers)
+      // Include connected statements + their philosophers + the connections
+      connections.forEach((conn: ConnectionLink) => {
+        if (myStatements.has(conn.statementFromId) || myStatements.has(conn.statementToId)) {
+          activeStatements.add(conn.statementFromId);
+          activeStatements.add(conn.statementToId);
+          activeConnections.add(`${conn.statementFromId}-${conn.statementToId}`);
+        }
+      });
+      svg.selectAll('.statement').each(function(d: any) {
+        if (activeStatements.has(d.id)) activePhilosophers.add(d.philosopherId);
+      });
     } else if (filteredStatement) {
       // Filter mode: only show this statement, related statements, and their connections
       activeStatements.add(filteredStatement);
@@ -492,12 +497,25 @@ export function TimelineCanvas() {
         }
       });
     } else if (hoveredPhilosopher) {
-      // Hover mode: fade all except this philosopher
+      // Hover mode: fade all except this philosopher + show its connections
       activePhilosophers.add(hoveredPhilosopher);
+      const myStatements = new Set<number>();
       svg.selectAll('.statement').each(function(d: any) {
         if (d.philosopherId === hoveredPhilosopher) {
+          myStatements.add(d.id);
           activeStatements.add(d.id);
         }
+      });
+      // Include connected statements + their philosophers + connections
+      connections.forEach((conn: ConnectionLink) => {
+        if (myStatements.has(conn.statementFromId) || myStatements.has(conn.statementToId)) {
+          activeStatements.add(conn.statementFromId);
+          activeStatements.add(conn.statementToId);
+          activeConnections.add(`${conn.statementFromId}-${conn.statementToId}`);
+        }
+      });
+      svg.selectAll('.statement').each(function(d: any) {
+        if (activeStatements.has(d.id)) activePhilosophers.add(d.philosopherId);
       });
     } else if (hoveredStatement) {
       // Hover mode: show this statement and related ones
@@ -602,8 +620,27 @@ export function TimelineCanvas() {
         // Disable hover events during animation
         setHoveredPhilosopher(null);
         setHoveredStatement(null);
-        svg.style('pointer-events', 'none');
-        
+
+        // Pre-compute packed statement positions (no gaps from hidden statements)
+        const newStatementPositions = new Map<number, {x: number, y: number}>();
+        activePhilosList.forEach((item) => {
+          const philoPos = newPositions.get(item.data.id);
+          if (!philoPos) return;
+          const activeStmts: any[] = [];
+          svg.selectAll('.statement').each(function(s: any) {
+            if (s.philosopherId === item.data.id && activeStatements.has(s.id)) {
+              activeStmts.push(s);
+            }
+          });
+          activeStmts.sort((a, b) => (a.y || 0) - (b.y || 0));
+          activeStmts.forEach((s, j) => {
+            newStatementPositions.set(s.id, {
+              x: philoPos.x + 30,
+              y: philoPos.y + 30 + (j * compactStatementSpacing)
+            });
+          });
+        });
+
         // Move philosophers to compact positions, hide others
         svg.selectAll('.philosopher-label')
           .transition()
@@ -612,41 +649,20 @@ export function TimelineCanvas() {
           .attr('transform', function(d: any) {
             if (activePhilosophers.has(d.id)) {
               const pos = newPositions.get(d.id);
-              if (pos) {
-                return `translate(${pos.x}, ${pos.y})`;
-              }
+              if (pos) return `translate(${pos.x}, ${pos.y})`;
             }
             return `translate(${d.x}, ${d.y})`;
-          })
-          .on('end', function() {
-            // Re-enable pointer events after last transition ends
-            svg.style('pointer-events', 'auto');
           });
-        
-        // Move statements with their philosophers, hide others
+
+        // Move statements to packed positions, hide others
         svg.selectAll('.statement')
           .transition()
           .duration(500)
           .style('opacity', (d: any) => activeStatements.has(d.id) ? 1 : 0)
           .attr('transform', function(d: any) {
             if (activeStatements.has(d.id)) {
-              const philoPos = newPositions.get(d.philosopherId);
-              if (philoPos) {
-                // Find original philosopher position from SVG data
-                let origPhiloX = 0, origPhiloY = 0;
-                svg.selectAll('.philosopher-label').each(function(p: any) {
-                  if (p.id === d.philosopherId) {
-                    origPhiloX = p.x || 0;
-                    origPhiloY = p.y || 0;
-                  }
-                });
-                
-                // Calculate offset from original philosopher position
-                const offsetX = d.x - origPhiloX;
-                const offsetY = d.y - origPhiloY;
-                
-                return `translate(${philoPos.x + offsetX}, ${philoPos.y + offsetY})`;
-              }
+              const pos = newStatementPositions.get(d.id);
+              if (pos) return `translate(${pos.x}, ${pos.y})`;
             }
             return `translate(${d.x}, ${d.y})`;
           });
@@ -656,11 +672,15 @@ export function TimelineCanvas() {
           .transition()
           .duration(250)
           .style('opacity', 0);
-        
+
+        const filterTs = Date.now();
+        filterTimestampRef.current = filterTs;
+
         // Redraw connections with new positions after movement
         setTimeout(() => {
+          if (filterTimestampRef.current !== filterTs) return;
           svg.selectAll('.connection').remove();
-          
+
           const connG = svg.select('g').insert('g', ':first-child').attr('class', 'connections');
           
           connections.forEach((conn: any) => {
@@ -677,96 +697,186 @@ export function TimelineCanvas() {
             let fromPos: {x: number, y: number} | null = null;
             let toPos: {x: number, y: number} | null = null;
             
-            svg.selectAll('.statement').each(function(s: any) {
-              if (s.id === conn.statementFromId) {
-                const philoPos = newPositions.get(s.philosopherId);
-                if (philoPos) {
-                  // Find original philosopher position
-                  let origPhiloX = 0, origPhiloY = 0;
-                  svg.selectAll('.philosopher-label').each(function(p: any) {
-                    if (p.id === s.philosopherId) {
-                      origPhiloX = p.x || 0;
-                      origPhiloY = p.y || 0;
-                    }
-                  });
-                  const offsetX = s.x - origPhiloX;
-                  const offsetY = s.y - origPhiloY;
-                  fromPos = { x: philoPos.x + offsetX - 10, y: philoPos.y + offsetY };
-                }
-              }
-              if (s.id === conn.statementToId) {
-                const philoPos = newPositions.get(s.philosopherId);
-                if (philoPos) {
-                  // Find original philosopher position
-                  let origPhiloX = 0, origPhiloY = 0;
-                  svg.selectAll('.philosopher-label').each(function(p: any) {
-                    if (p.id === s.philosopherId) {
-                      origPhiloX = p.x || 0;
-                      origPhiloY = p.y || 0;
-                    }
-                  });
-                  const offsetX = s.x - origPhiloX;
-                  const offsetY = s.y - origPhiloY;
-                  toPos = { x: philoPos.x + offsetX - 10, y: philoPos.y + offsetY };
-                }
-              }
-            });
-            
+            const fromStmtPos = newStatementPositions.get(conn.statementFromId);
+            const toStmtPos = newStatementPositions.get(conn.statementToId);
+            if (!fromStmtPos || !toStmtPos) return;
+
+            fromPos = { x: fromStmtPos.x - 10, y: fromStmtPos.y - 4 };
+            toPos   = { x: toStmtPos.x - 10,   y: toStmtPos.y - 4 };
+
             if (fromPos !== null && toPos !== null) {
               const from: {x: number, y: number} = fromPos;
               const to: {x: number, y: number} = toPos;
-              const dx = to.x - from.x;
-              const dy = to.y - from.y;
-              const distance = Math.sqrt(dx * dx + dy * dy);
-              const radius = distance / 2;
-              const sweep = (conn.connectionType === 'disagreement' || conn.connectionType === 'refutation') ? 0 : 1;
-              
+              const isRed1 = ['disagreement','refutation','oppose'].includes(conn.connectionType as string);
               const colorFor = (type: string) => {
-                if (type === 'agreement' || type === 'expansion' || type === 'inspiration') return '#a7f3d0';
-                if (type === 'disagreement' || type === 'refutation') return '#fecaca';
+                if (['agreement','expansion','inspiration','influence','resonate'].includes(type)) return '#a7f3d0';
+                if (['disagreement','refutation','oppose'].includes(type)) return '#fecaca';
                 return '#d1d5db';
               };
-              
+              const ddx1 = to.x - from.x, ddy1 = to.y - from.y;
+              const r1 = Math.sqrt(ddx1 * ddx1 + ddy1 * ddy1) / 2;
+              const aboveSweep1 = ddx1 >= 0 ? 1 : 0;
+              const sweep1 = isRed1 ? 1 - aboveSweep1 : aboveSweep1;
               connG.append('path')
                 .attr('class', 'connection')
-                .attr('d', `M ${from.x} ${from.y} A ${radius} ${radius} 0 0 ${sweep} ${to.x} ${to.y}`)
+                .attr('data-from', conn.statementFromId)
+                .attr('data-to', conn.statementToId)
+                .attr('d', `M ${from.x} ${from.y} A ${r1} ${r1} 0 0 ${sweep1} ${to.x} ${to.y}`)
                 .attr('fill', 'none')
                 .attr('stroke', colorFor(conn.connectionType))
                 .attr('stroke-width', 2)
                 .style('opacity', 0)
-                .transition()
-                .duration(250)
-                .style('opacity', 1);
+                .transition().duration(250).style('opacity', 1);
             }
           });
         }, 550);
         
       } else if (filteredPhilosopher) {
-        // FILTER by philosopher: just hide others, don't move
-        // Disable hover events during animation
+        // Compact staircase: clicked philosopher (all statements) + connected philosophers (only related statements)
         setHoveredPhilosopher(null);
         setHoveredStatement(null);
-        svg.style('pointer-events', 'none');
-        
-        svg.selectAll('.philosopher-label')
-          .transition()
-          .duration(400)
-          .style('opacity', (d: any) => activePhilosophers.has(d.id) ? 1 : 0)
-          .on('end', function() {
-            svg.style('pointer-events', 'auto');
+
+        const activePhilosList: any[] = [];
+        svg.selectAll('.philosopher-label').each(function(d: any) {
+          if (activePhilosophers.has(d.id)) {
+            activePhilosList.push({ node: this, data: d });
+          }
+        });
+        activePhilosList.sort((a, b) => (a.data.birthYear || 0) - (b.data.birthYear || 0));
+
+        const compactStartX = 80;
+        const compactStartY = 40;
+        const compactStepX = 280;
+        const compactBaseStepY = 70;
+        const compactStatementSpacing = 22;
+
+        const newPositions = new Map<number, {x: number, y: number}>();
+        let cumulativeY = compactStartY;
+
+        activePhilosList.forEach((item, index) => {
+          const compactX = compactStartX + (index * compactStepX);
+          const compactY = cumulativeY;
+
+          let activeStmtCount = 0;
+          svg.selectAll('.statement').each(function(s: any) {
+            if (s.philosopherId === item.data.id && activeStatements.has(s.id)) {
+              activeStmtCount++;
+            }
           });
 
+          newPositions.set(item.data.id, { x: compactX, y: compactY });
+          cumulativeY += compactBaseStepY + (activeStmtCount * compactStatementSpacing);
+        });
+
+        // Auto-zoom to fit compacted group
+        const positions = Array.from(newPositions.values());
+        if (positions.length > 0) {
+          const minX = Math.min(...positions.map(p => p.x)) - 100;
+          const maxX = Math.max(...positions.map(p => p.x)) + 300;
+          const minY = Math.min(...positions.map(p => p.y)) - 50;
+          const maxY = cumulativeY + 50;
+          const width = maxX - minX;
+          const height = maxY - minY;
+          const centerX = minX + width / 2;
+          const centerY = minY + height / 2;
+          const svgWidth = containerRef.current?.clientWidth || 1200;
+          const svgHeight = containerRef.current?.clientHeight || 800;
+          const scale = Math.min(svgWidth / width, svgHeight / height, 1.2);
+          const translateX = svgWidth / 2 - centerX * scale;
+          const translateY = svgHeight / 2 - centerY * scale;
+          svg.transition().duration(500).call(
+            zoomRef.current.transform,
+            d3.zoomIdentity.translate(translateX, translateY).scale(scale)
+          );
+        }
+
+        // Pre-compute packed statement positions (no gaps from hidden statements)
+        const newStatementPositions = new Map<number, {x: number, y: number}>();
+        activePhilosList.forEach((item) => {
+          const philoPos = newPositions.get(item.data.id);
+          if (!philoPos) return;
+          const activeStmts: any[] = [];
+          svg.selectAll('.statement').each(function(s: any) {
+            if (s.philosopherId === item.data.id && activeStatements.has(s.id)) {
+              activeStmts.push(s);
+            }
+          });
+          activeStmts.sort((a, b) => (a.y || 0) - (b.y || 0));
+          activeStmts.forEach((s, j) => {
+            newStatementPositions.set(s.id, {
+              x: philoPos.x + 30,
+              y: philoPos.y + 30 + (j * compactStatementSpacing)
+            });
+          });
+        });
+
+        // Move philosophers to compact positions, hide others
+        svg.selectAll('.philosopher-label')
+          .transition().duration(500)
+          .style('opacity', (d: any) => activePhilosophers.has(d.id) ? 1 : 0)
+          .attr('transform', function(d: any) {
+            if (activePhilosophers.has(d.id)) {
+              const pos = newPositions.get(d.id);
+              if (pos) return `translate(${pos.x}, ${pos.y})`;
+            }
+            return `translate(${d.x}, ${d.y})`;
+          });
+
+        // Move statements to packed positions, hide others
         svg.selectAll('.statement')
-          .transition()
-          .duration(300)
-          .style('opacity', (d: any) => activeStatements.has(d.id) ? 1 : 0);
-        
-        // Fade connections
-        svg.selectAll('.connection')
-          .transition()
-          .duration(300)
-          .style('opacity', 0);
-        
+          .transition().duration(500)
+          .style('opacity', (d: any) => activeStatements.has(d.id) ? 1 : 0)
+          .attr('transform', function(d: any) {
+            if (activeStatements.has(d.id)) {
+              const pos = newStatementPositions.get(d.id);
+              if (pos) return `translate(${pos.x}, ${pos.y})`;
+            }
+            return `translate(${d.x}, ${d.y})`;
+          });
+
+        // Hide connections, redraw after movement with packed positions
+        svg.selectAll('.connection').transition().duration(250).style('opacity', 0);
+
+        const filterTs2 = Date.now();
+        filterTimestampRef.current = filterTs2;
+
+        setTimeout(() => {
+          if (filterTimestampRef.current !== filterTs2) return;
+          svg.selectAll('.connection').remove();
+          const connG = svg.select('g').insert('g', ':first-child').attr('class', 'connections');
+
+          const colorFor = (type: string) => {
+            if (['agreement','expansion','inspiration','influence','resonate'].includes(type)) return '#a7f3d0';
+            if (['disagreement','refutation','oppose'].includes(type)) return '#fecaca';
+            return '#d1d5db';
+          };
+
+          connections.forEach((conn: any) => {
+            if (!activeConnections.has(`${conn.statementFromId}-${conn.statementToId}`)) return;
+            const fromStmtPos = newStatementPositions.get(conn.statementFromId);
+            const toStmtPos = newStatementPositions.get(conn.statementToId);
+            if (!fromStmtPos || !toStmtPos) return;
+
+            const from = { x: fromStmtPos.x - 10, y: fromStmtPos.y - 4 };
+            const to   = { x: toStmtPos.x - 10,   y: toStmtPos.y - 4 };
+            const isRed = ['disagreement','refutation','oppose'].includes(conn.connectionType);
+            const ddx = to.x - from.x, ddy = to.y - from.y;
+            const r = Math.sqrt(ddx * ddx + ddy * ddy) / 2;
+            const aboveSweep = ddx >= 0 ? 1 : 0;
+            const sweep = isRed ? 1 - aboveSweep : aboveSweep;
+            connG.append('path')
+              .attr('class', 'connection')
+              .attr('data-from', conn.statementFromId)
+              .attr('data-to', conn.statementToId)
+              .attr('d', `M ${from.x} ${from.y} A ${r} ${r} 0 0 ${sweep} ${to.x} ${to.y}`)
+              .attr('fill', 'none')
+              .attr('stroke', colorFor(conn.connectionType))
+              .attr('stroke-width', 2)
+              .style('opacity', 0)
+              .transition().duration(250).style('opacity', 1);
+          });
+        }, 550);
+
       } else if (hasHover && !hasFilter) {
         // HOVER mode: just fade, don't move (only when NOT filtered)
         svg.selectAll('.philosopher-label')
@@ -779,31 +889,23 @@ export function TimelineCanvas() {
           .duration(300)
           .style('opacity', (d: any) => activeStatements.has(d.id) ? 1 : 0);
         
-        // Fade connections in hover mode
+        // Fade connections in hover mode using data-* attributes (survive redraw)
         svg.selectAll('.connection')
           .transition()
           .duration(300)
-          .style('opacity', function(d: any) {
-            // Check if connection has data bound to it
-            if (!d || !d.statementFromId || !d.statementToId) {
-              return 1; // Default to visible if no data
-            }
-            
-            const key = `${d.statementFromId}-${d.statementToId}`;
-            
-            // If we have active connections defined, show only those
+          .style('opacity', function() {
+            const el = d3.select(this);
+            const fromId = +(el.attr('data-from') || 0);
+            const toId   = +(el.attr('data-to')   || 0);
+            if (!fromId || !toId) return 0.2;
+
             if (activeConnections.size > 0) {
+              const key = `${fromId}-${toId}`;
               return activeConnections.has(key) ? 1 : 0.2;
             }
-            
-            // If we're hovering/filtering by philosopher or statement without connections,
-            // show connections only if both endpoints are in active statements
             if (activeStatements.size > 0) {
-              const isActive = activeStatements.has(d.statementFromId) && 
-                             activeStatements.has(d.statementToId);
-              return isActive ? 1 : 0.2;
+              return activeStatements.has(fromId) && activeStatements.has(toId) ? 1 : 0.2;
             }
-            
             return 1;
           });
       }
@@ -812,7 +914,6 @@ export function TimelineCanvas() {
       // Disable hover events during animation
       setHoveredPhilosopher(null);
       setHoveredStatement(null);
-      svg.style('pointer-events', 'none');
       
       // Only restore zoom if we had a filter before (not just hover)
       if (initialZoomRef.current && wasFilterActive) {
@@ -830,7 +931,6 @@ export function TimelineCanvas() {
         .style('opacity', 1)
         .attr('transform', (d: any) => `translate(${d.x}, ${d.y})`)
         .on('end', function() {
-          svg.style('pointer-events', 'auto');
         });
 
       svg.selectAll('.statement')
@@ -851,8 +951,8 @@ export function TimelineCanvas() {
           const connG = svg.select('g').insert('g', ':first-child').attr('class', 'connections');
           
           const colorFor = (type: string) => {
-            if (type === 'agreement' || type === 'expansion' || type === 'inspiration') return '#a7f3d0';
-            if (type === 'disagreement' || type === 'refutation') return '#fecaca';
+            if (type === 'agreement' || type === 'expansion' || type === 'inspiration' || type === 'influence' || type === 'resonate') return '#a7f3d0';
+            if (type === 'disagreement' || type === 'refutation' || type === 'oppose') return '#fecaca';
             return '#d1d5db';
           };
           
@@ -863,23 +963,24 @@ export function TimelineCanvas() {
             svg.selectAll('.statement').each(function(s: any) {
               if (s.id === conn.statementFromId) {
                 fromX = s.x - 10;
-                fromY = s.y;
+                fromY = s.y - 4;
               }
               if (s.id === conn.statementToId) {
                 toX = s.x - 10;
-                toY = s.y;
+                toY = s.y - 4;
               }
             });
             
-            const dx = toX - fromX;
-            const dy = toY - fromY;
-            const distance = Math.sqrt(dx * dx + dy * dy);
-            const radius = distance / 2;
-            const sweep = (conn.connectionType === 'disagreement' || conn.connectionType === 'refutation') ? 0 : 1;
-            
+            const isRed2 = ['disagreement','refutation','oppose'].includes(conn.connectionType as string);
+            const ddx2 = toX - fromX, ddy2 = toY - fromY;
+            const r2 = Math.sqrt(ddx2 * ddx2 + ddy2 * ddy2) / 2;
+            const aboveSweep2 = ddx2 >= 0 ? 1 : 0;
+            const sweep2 = isRed2 ? 1 - aboveSweep2 : aboveSweep2;
             connG.append('path')
               .attr('class', 'connection')
-              .attr('d', `M ${fromX} ${fromY} A ${radius} ${radius} 0 0 ${sweep} ${toX} ${toY}`)
+              .attr('data-from', conn.statementFromId)
+              .attr('data-to', conn.statementToId)
+              .attr('d', `M ${fromX} ${fromY} A ${r2} ${r2} 0 0 ${sweep2} ${toX} ${toY}`)
               .attr('fill', 'none')
               .attr('stroke', colorFor(conn.connectionType))
               .attr('stroke-width', 2)
@@ -902,7 +1003,7 @@ export function TimelineCanvas() {
 
   if (loading) {
     return (
-      <div className="w-full h-[calc(100vh-280px)] flex items-center justify-center">
+      <div className="w-full h-full flex items-center justify-center">
         <div className="text-center space-y-4">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
           <p className="text-muted-foreground">Cargando datos del timeline...</p>
@@ -936,8 +1037,8 @@ export function TimelineCanvas() {
   }
 
   return (
-    <div className="w-full">
-      <div className="relative">
+    <div className="w-full h-full flex flex-col">
+      <div className="relative flex-1 flex flex-col min-h-0">
         {/* Info badge */}
         <div className="absolute top-4 left-4 z-10 bg-white/80 backdrop-blur px-3 py-1 rounded shadow-sm">
           <div className="text-xs text-gray-600 font-medium">
@@ -1010,14 +1111,14 @@ export function TimelineCanvas() {
                 <span>scroll para zoom, mejor en Chrome desktop</span>
               </div>
               <div className="text-[10px] text-gray-400 pt-1">
-                v1.0, última actualización: {new Date().toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                v{APP_VERSION} · {new Date().toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' })}
               </div>
             </div>
           </div>
         </div>
 
-        <div ref={containerRef} className="w-full h-[calc(100vh-200px)] bg-white overflow-hidden border-t">
-          <svg ref={svgRef} style={{ minWidth: '3000px', minHeight: '2500px' }} />
+        <div ref={containerRef} className="w-full flex-1 bg-white overflow-hidden border-t">
+          <svg ref={svgRef} style={{ width: "100%", height: "100%" }} />
         </div>
 
         {tooltip && (

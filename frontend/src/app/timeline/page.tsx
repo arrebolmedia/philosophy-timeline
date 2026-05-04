@@ -9,7 +9,7 @@ export const metadata = {
 
 export default function TimelinePage() {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="h-screen flex flex-col bg-background">
       {/* Header */}
       {/* <section className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container py-8">
@@ -35,7 +35,7 @@ export default function TimelinePage() {
       </section> */}
 
       {/* Timeline Canvas */}
-      <section className="flex-1">
+      <section className="flex-1 flex flex-col">
         <Suspense fallback={<CanvasSkeleton />}>
           <TimelineCanvas />
         </Suspense>
