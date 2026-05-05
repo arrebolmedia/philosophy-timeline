@@ -41,7 +41,7 @@ export default function HomePage() {
             
             <div className={`transition-all duration-1000 ${showContent ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
               <p className="text-xl sm:text-2xl text-gray-600 font-light max-w-2xl mx-auto font-[family-name:var(--font-poppins)]">
-                resumida y visualizada
+                Una guía visual.
               </p>
               
               {/* CTA */}
@@ -105,7 +105,18 @@ export default function HomePage() {
       {/* Footer */}
       <footer className="border-t py-8">
         <div className="container mx-auto px-4 text-center text-sm text-gray-400 font-[family-name:var(--font-poppins)] space-y-2">
-          <p>Inspirado en el trabajo de Deniz Cem Önduygu.</p>
+          <p>
+            Inspirado en el trabajo de{' '}
+            <a
+              href="https://www.denizcemonduygu.com/portfolio/the-history-of-philosophy/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline underline-offset-4 hover:text-gray-600 transition-colors"
+            >
+              Deniz Cem Önduygu
+            </a>
+            .
+          </p>
           <p>
             <Link href="/logs" className="underline underline-offset-4 hover:text-gray-600 transition-colors">
               Registro de cambios
