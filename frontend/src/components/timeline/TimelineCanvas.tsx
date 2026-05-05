@@ -103,43 +103,37 @@ export function TimelineCanvas() {
       return p;
     }).sort((a, b) => (a.birthYear || -1000) - (b.birthYear || -1000));
 
-    // DIAGONAL STAIRCASE LAYOUT: each philosopher descends diagonally (down-right)
-    const startX = 80;
-    const startY = 40;
-    const diagonalStepX = 200; // horizontal step per philosopher (move right)
-    const statementSpacing = 18; // vertical space between statements
-    const basePhilosopherHeight = 70; // base space for philosopher name + padding
+    // SINGLE DIAGONAL AXIS: philosophers and statements all share one diagonal line
+    const ANGLE    = 40 * Math.PI / 180;
+    const PHIL_STEP      = 80;  // gap before each philosopher node
+    const PHIL_AFTER_GAP = 42;  // extra gap after philosopher node before first statement
+    const STAT_STEP      = 26;  // spacing between statement nodes
+    const ORIGIN_X  = 100;
+    const ORIGIN_Y  = 60;
+    const cosA = Math.cos(ANGLE);
+    const sinA = Math.sin(ANGLE);
 
-    // flatten statements and set positions
     const statements: StatementNode[] = [];
-    let cumulativeY = startY; // Track vertical position dynamically
-    
-    philosophers.forEach((p, i) => {
-      // Each philosopher starts at diagonal position (staircase effect)
-      const philosopherX = startX + (i * diagonalStepX);
-      const philosopherY = cumulativeY;
-      
-      p.x = philosopherX;
-      p.y = philosopherY;
-      
-      const numStatements = (p.statements || []).length;
-      
-      (p.statements || []).forEach((s: StatementNode, j: number) => {
-        // Statements cascade vertically below each philosopher
-        const x = philosopherX + 30;
-        const y = philosopherY + 30 + (j * statementSpacing);
-        s.x = x;
-        s.y = y;
+    let dist = 0; // accumulated distance along the axis
+
+    philosophers.forEach((p) => {
+      dist += PHIL_STEP;
+      p.x = ORIGIN_X + dist * cosA;
+      p.y = ORIGIN_Y + dist * sinA;
+
+      const stmts = p.statements || [];
+      stmts.forEach((s: StatementNode, j: number) => {
+        dist += j === 0 ? PHIL_AFTER_GAP : STAT_STEP;
+        s.x = ORIGIN_X + dist * cosA;
+        s.y = ORIGIN_Y + dist * sinA;
         s.philosopherId = p.id;
         statements.push(s);
       });
-      
-      // Calculate space needed for this philosopher: base height + statements
-      const philosopherTotalHeight = basePhilosopherHeight + (numStatements * statementSpacing);
-      cumulativeY += philosopherTotalHeight;
     });
 
-    // ===== DRAW CONNECTIONS FIRST (bottom layer) =====
+    const axisTotalDist = dist;
+
+// ===== DRAW CONNECTIONS FIRST (bottom layer) =====
     const connG = g.append('g').attr('class', 'connections');
     const conns: ConnectionLink[] = data.connections || [];
     console.log('Drawing connections:', conns.length, conns);
@@ -558,39 +552,41 @@ export function TimelineCanvas() {
         });
         activePhilosList.sort((a, b) => (a.data.birthYear || 0) - (b.data.birthYear || 0));
         
-        // Calculate compact staircase positions
-        const compactStartX = 80;
-        const compactStartY = 40;
-        const compactStepX = 280;
-        const compactBaseStepY = 70;
-        const compactStatementSpacing = 22;
-        
+        // Calculate compact diagonal positions (same axis, only active nodes)
+        const COMPACT_PHIL_STEP = 140;
+        const COMPACT_STAT_STEP = 50;
+        const COMPACT_ANGLE = 40 * Math.PI / 180;
+        const COMPACT_COS = Math.cos(COMPACT_ANGLE);
+        const COMPACT_SIN = Math.sin(COMPACT_ANGLE);
+        const COMPACT_ORIGIN_X = 100;
+        const COMPACT_ORIGIN_Y = 60;
+
         const newPositions = new Map<number, {x: number, y: number}>();
-        let cumulativeY = compactStartY;
-        
-        activePhilosList.forEach((item, index) => {
-          const compactX = compactStartX + (index * compactStepX);
-          const compactY = cumulativeY;
-          
-          // Count active statements for this philosopher
-          let activeStmtCount = 0;
+        let compactDist = 0;
+
+        activePhilosList.forEach((item) => {
+          compactDist += COMPACT_PHIL_STEP;
+          newPositions.set(item.data.id, {
+            x: COMPACT_ORIGIN_X + compactDist * COMPACT_COS,
+            y: COMPACT_ORIGIN_Y + compactDist * COMPACT_SIN,
+          });
+
           svg.selectAll('.statement').each(function(s: any) {
             if (s.philosopherId === item.data.id && activeStatements.has(s.id)) {
-              activeStmtCount++;
+              compactDist += COMPACT_STAT_STEP;
             }
           });
-          
-          newPositions.set(item.data.id, { x: compactX, y: compactY });
-          cumulativeY += compactBaseStepY + (activeStmtCount * compactStatementSpacing);
         });
-        
-        // Calculate bounding box of the grouped content
-        const positions = Array.from(newPositions.values());
-        if (positions.length > 0) {
-          const minX = Math.min(...positions.map(p => p.x)) - 100;
-          const maxX = Math.max(...positions.map(p => p.x)) + 300;
-          const minY = Math.min(...positions.map(p => p.y)) - 50;
-          const maxY = cumulativeY + 50;
+
+        // Calculate bounding box from diagonal node positions
+        const allCompactPositions = Array.from(newPositions.values());
+        if (allCompactPositions.length > 0) {
+          const endX = COMPACT_ORIGIN_X + compactDist * COMPACT_COS;
+          const endY = COMPACT_ORIGIN_Y + compactDist * COMPACT_SIN;
+          const minX = COMPACT_ORIGIN_X - 80;
+          const maxX = endX + 200;
+          const minY = COMPACT_ORIGIN_Y - 50;
+          const maxY = endY + 100;
           
           const width = maxX - minX;
           const height = maxY - minY;
@@ -621,11 +617,11 @@ export function TimelineCanvas() {
         setHoveredPhilosopher(null);
         setHoveredStatement(null);
 
-        // Pre-compute packed statement positions (no gaps from hidden statements)
+        // Pre-compute packed statement positions along diagonal (no gaps from hidden statements)
         const newStatementPositions = new Map<number, {x: number, y: number}>();
+        let stmtDist2 = 0;
         activePhilosList.forEach((item) => {
-          const philoPos = newPositions.get(item.data.id);
-          if (!philoPos) return;
+          stmtDist2 += COMPACT_PHIL_STEP;
           const activeStmts: any[] = [];
           svg.selectAll('.statement').each(function(s: any) {
             if (s.philosopherId === item.data.id && activeStatements.has(s.id)) {
@@ -633,15 +629,16 @@ export function TimelineCanvas() {
             }
           });
           activeStmts.sort((a, b) => (a.y || 0) - (b.y || 0));
-          activeStmts.forEach((s, j) => {
+          activeStmts.forEach((s) => {
+            stmtDist2 += COMPACT_STAT_STEP;
             newStatementPositions.set(s.id, {
-              x: philoPos.x + 30,
-              y: philoPos.y + 30 + (j * compactStatementSpacing)
+              x: COMPACT_ORIGIN_X + stmtDist2 * COMPACT_COS,
+              y: COMPACT_ORIGIN_Y + stmtDist2 * COMPACT_SIN,
             });
           });
         });
 
-        // Move philosophers to compact positions, hide others
+        // Move philosophers to compact diagonal positions, hide others
         svg.selectAll('.philosopher-label')
           .transition()
           .duration(500)
@@ -654,7 +651,7 @@ export function TimelineCanvas() {
             return `translate(${d.x}, ${d.y})`;
           });
 
-        // Move statements to packed positions, hide others
+        // Move statements to packed diagonal positions, hide others
         svg.selectAll('.statement')
           .transition()
           .duration(500)
@@ -744,37 +741,39 @@ export function TimelineCanvas() {
         });
         activePhilosList.sort((a, b) => (a.data.birthYear || 0) - (b.data.birthYear || 0));
 
-        const compactStartX = 80;
-        const compactStartY = 40;
-        const compactStepX = 280;
-        const compactBaseStepY = 70;
-        const compactStatementSpacing = 22;
+        const COMPACT_PHIL_STEP2 = 140;
+        const COMPACT_STAT_STEP2 = 50;
+        const COMPACT_ANGLE2 = 40 * Math.PI / 180;
+        const COMPACT_COS2 = Math.cos(COMPACT_ANGLE2);
+        const COMPACT_SIN2 = Math.sin(COMPACT_ANGLE2);
+        const COMPACT_ORIGIN_X2 = 100;
+        const COMPACT_ORIGIN_Y2 = 60;
 
         const newPositions = new Map<number, {x: number, y: number}>();
-        let cumulativeY = compactStartY;
+        let compactDist2 = 0;
 
-        activePhilosList.forEach((item, index) => {
-          const compactX = compactStartX + (index * compactStepX);
-          const compactY = cumulativeY;
-
-          let activeStmtCount = 0;
-          svg.selectAll('.statement').each(function(s: any) {
-            if (s.philosopherId === item.data.id && activeStatements.has(s.id)) {
-              activeStmtCount++;
-            }
+        activePhilosList.forEach((item) => {
+          compactDist2 += COMPACT_PHIL_STEP2;
+          newPositions.set(item.data.id, {
+            x: COMPACT_ORIGIN_X2 + compactDist2 * COMPACT_COS2,
+            y: COMPACT_ORIGIN_Y2 + compactDist2 * COMPACT_SIN2,
           });
 
-          newPositions.set(item.data.id, { x: compactX, y: compactY });
-          cumulativeY += compactBaseStepY + (activeStmtCount * compactStatementSpacing);
+          svg.selectAll('.statement').each(function(s: any) {
+            if (s.philosopherId === item.data.id && activeStatements.has(s.id)) {
+              compactDist2 += COMPACT_STAT_STEP2;
+            }
+          });
         });
 
-        // Auto-zoom to fit compacted group
-        const positions = Array.from(newPositions.values());
-        if (positions.length > 0) {
-          const minX = Math.min(...positions.map(p => p.x)) - 100;
-          const maxX = Math.max(...positions.map(p => p.x)) + 300;
-          const minY = Math.min(...positions.map(p => p.y)) - 50;
-          const maxY = cumulativeY + 50;
+        // Auto-zoom to fit compacted diagonal
+        if (newPositions.size > 0) {
+          const endX2 = COMPACT_ORIGIN_X2 + compactDist2 * COMPACT_COS2;
+          const endY2 = COMPACT_ORIGIN_Y2 + compactDist2 * COMPACT_SIN2;
+          const minX = COMPACT_ORIGIN_X2 - 80;
+          const maxX = endX2 + 200;
+          const minY = COMPACT_ORIGIN_Y2 - 50;
+          const maxY = endY2 + 100;
           const width = maxX - minX;
           const height = maxY - minY;
           const centerX = minX + width / 2;
@@ -790,11 +789,11 @@ export function TimelineCanvas() {
           );
         }
 
-        // Pre-compute packed statement positions (no gaps from hidden statements)
+        // Pre-compute packed statement positions along diagonal (no gaps)
         const newStatementPositions = new Map<number, {x: number, y: number}>();
+        let stmtDist3 = 0;
         activePhilosList.forEach((item) => {
-          const philoPos = newPositions.get(item.data.id);
-          if (!philoPos) return;
+          stmtDist3 += COMPACT_PHIL_STEP2;
           const activeStmts: any[] = [];
           svg.selectAll('.statement').each(function(s: any) {
             if (s.philosopherId === item.data.id && activeStatements.has(s.id)) {
@@ -802,10 +801,11 @@ export function TimelineCanvas() {
             }
           });
           activeStmts.sort((a, b) => (a.y || 0) - (b.y || 0));
-          activeStmts.forEach((s, j) => {
+          activeStmts.forEach((s) => {
+            stmtDist3 += COMPACT_STAT_STEP2;
             newStatementPositions.set(s.id, {
-              x: philoPos.x + 30,
-              y: philoPos.y + 30 + (j * compactStatementSpacing)
+              x: COMPACT_ORIGIN_X2 + stmtDist3 * COMPACT_COS2,
+              y: COMPACT_ORIGIN_Y2 + stmtDist3 * COMPACT_SIN2,
             });
           });
         });
