@@ -35,7 +35,7 @@ export const metadata: Metadata = {
     default: 'Historia de la Filosofía Interactiva',
     template: '%s | Historia de la Filosofía'
   },
-  description: 'Explora 2600 años de filosofía occidental a través de una visualización interactiva que conecta ideas, argumentos y pensadores a lo largo del tiempo.',
+  description: 'Una guía visual.',
   keywords: [
     'filosofía',
     'historia',
@@ -53,7 +53,7 @@ export const metadata: Metadata = {
     locale: 'es_ES',
     url: '/',
     title: 'Historia de la Filosofía Interactiva',
-    description: 'Explora 2600 años de filosofía occidental de forma interactiva',
+    description: 'Una guía visual.',
     siteName: 'Historia de la Filosofía',
     images: [
       {
@@ -67,7 +67,7 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'Historia de la Filosofía Interactiva',
-    description: 'Explora 2600 años de filosofía occidental de forma interactiva',
+    description: 'Una guía visual.',
     images: ['/images/OG-image.png'],
   },
   robots: {
