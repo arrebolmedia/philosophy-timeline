@@ -57,7 +57,7 @@ export const metadata: Metadata = {
     siteName: 'Historia de la Filosofía',
     images: [
       {
-        url: '/og-image.jpg',
+        url: '/images/OG-image.png',
         width: 1200,
         height: 630,
         alt: 'Historia de la Filosofía - Timeline Interactivo',
@@ -68,7 +68,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'Historia de la Filosofía Interactiva',
     description: 'Explora 2600 años de filosofía occidental de forma interactiva',
-    images: ['/og-image.jpg'],
+    images: ['/images/OG-image.png'],
   },
   robots: {
     index: true,
