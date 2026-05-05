@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
-import { ArrowRight } from 'lucide-react'
+import { ArrowRight, ArrowDown } from 'lucide-react'
 import { useState, useEffect } from 'react'
 
 export default function HomePage() {
@@ -56,12 +56,18 @@ export default function HomePage() {
             </div>
           </div>
         </div>
+
+        {/* Arrow down */}
+        <div className={`absolute bottom-10 left-1/2 -translate-x-1/2 transition-all duration-1000 ${showContent ? 'opacity-100' : 'opacity-0'}`}>
+          <ArrowDown className="h-6 w-6 text-gray-300 animate-bounce" />
+        </div>
       </section>
 
       {/* About Section */}
       <section className="py-24 border-t">
         <div className="container mx-auto px-4 max-w-2xl">
-          <p className="text-base text-gray-500 leading-relaxed font-[family-name:var(--font-poppins)]">
+          <h2 className="text-2xl font-bold text-center mb-8 font-[family-name:var(--font-playfair)]">¿Por qué existe esto?</h2>
+          <p className="text-base text-gray-500 leading-relaxed font-[family-name:var(--font-poppins)] text-justify" style={{textAlignLast: 'center'}}>
             Esta línea del tiempo está inspirada en el trabajo de{' '}
             <a
               href="https://www.denizcemonduygu.com/portfolio/the-history-of-philosophy/"
@@ -76,10 +82,35 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* How it works Section */}
+      <section className="py-24 border-t">
+        <div className="container mx-auto px-4 max-w-2xl">
+          <h2 className="text-2xl font-bold text-center mb-8 font-[family-name:var(--font-playfair)]">¿Cómo funciona?</h2>
+          <p className="text-base text-gray-500 leading-relaxed font-[family-name:var(--font-poppins)] text-justify" style={{textAlignLast: 'center'}}>
+            Una guía visual siempre es útil, ya sea como introducción o como repaso. La navegación es sencilla e intuitiva, pensada para generar la menor fricción posible. Vale la pena mencionar que las conexiones entre argumentos —al menos hasta 2026— son de mi autoría, por lo que reflejan mis interpretaciones y están sujetas a error. Como reza el pie de cualquier LLM: puedo equivocarme. Por favor, verifica la información.
+          </p>
+        </div>
+      </section>
+
+      {/* AI Note Section */}
+      <section className="py-24 border-t">
+        <div className="container mx-auto px-4 max-w-2xl">
+          <h2 className="text-2xl font-bold text-center mb-8 font-[family-name:var(--font-playfair)]">Una nota sobre la IA</h2>
+          <p className="text-base text-gray-500 leading-relaxed font-[family-name:var(--font-poppins)] text-justify" style={{textAlignLast: 'center'}}>
+            Este proyecto fue desarrollado íntegramente con ayuda de Claude Code; no soy programador. Lo que sí asumo como compromiso personal es haber leído los textos de los que provienen los argumentos y analizar yo mismo cada conexión. La IA construye la herramienta; el criterio filosófico es mío.
+          </p>
+        </div>
+      </section>
+
       {/* Footer */}
       <footer className="border-t py-8">
-        <div className="container mx-auto px-4 text-center text-sm text-gray-400 font-[family-name:var(--font-poppins)]">
+        <div className="container mx-auto px-4 text-center text-sm text-gray-400 font-[family-name:var(--font-poppins)] space-y-2">
           <p>Inspirado en el trabajo de Deniz Cem Önduygu.</p>
+          <p>
+            <Link href="/logs" className="underline underline-offset-4 hover:text-gray-600 transition-colors">
+              Registro de cambios
+            </Link>
+          </p>
         </div>
       </footer>
     </div>
