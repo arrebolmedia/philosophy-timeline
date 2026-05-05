@@ -74,3 +74,14 @@ storybook-static/
 # Cypress
 frontend/cypress/videos/
 frontend/cypress/screenshots/
+
+# Claude Flow / Swarm
+.claude-flow/
+.swarm/
+backend/.claude-flow/
+backend/.swarm/
+.claude/
+
+# DB dumps
+prod_data.json
+prod_dump*.sql
