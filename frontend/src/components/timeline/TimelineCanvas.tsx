@@ -370,12 +370,12 @@ export function TimelineCanvas() {
           
           // Left half - green
           g.append('path')
-            .attr('d', 'M -10 -3 A 3 3 0 0 1 -10 3 Z')
+            .attr('d', 'M -10 -7 A 3 3 0 0 1 -10 -1 Z')
             .attr('fill', '#a7f3d0').attr('opacity', 1);
-          
+
           // Right half - red
           g.append('path')
-            .attr('d', 'M -10 -3 A 3 3 0 0 0 -10 3 Z')
+            .attr('d', 'M -10 -7 A 3 3 0 0 0 -10 -1 Z')
             .attr('fill', '#fecaca').attr('opacity', 1);
         }
       }
