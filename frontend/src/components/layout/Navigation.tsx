@@ -34,8 +34,9 @@ export function Navigation() {
     return null;
   }
 
-  // Admin pages always show solid navigation, home page uses transparent on scroll
-  const shouldBeTransparent = !isAdminPage && !isScrolled;
+  // Admin and timeline pages always show solid navigation, home page uses transparent on scroll
+  const isTimelinePage = pathname === '/timeline';
+  const shouldBeTransparent = !isAdminPage && !isScrolled && !isTimelinePage;
 
   return (
     <nav className={`fixed top-0 w-full z-50 transition-all duration-300 ${

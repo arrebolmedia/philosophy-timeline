@@ -11,7 +11,7 @@ interface LogEntry {
 
 interface ChangelogData {
   desarrollo: LogEntry[];
-  statements: LogEntry[];
+  proposiciones: LogEntry[];
 }
 
 function formatDate(iso: string) {
@@ -22,7 +22,13 @@ function formatDate(iso: string) {
   });
 }
 
+const PAGE_SIZE = 20;
+
 function LogColumn({ title, entries, color }: { title: string; entries: LogEntry[]; color: string }) {
+  const [page, setPage] = useState(1);
+  const totalPages = Math.ceil(entries.length / PAGE_SIZE);
+  const visible = entries.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
   return (
     <div className="flex-1 min-w-0">
       <h2 className={`text-lg font-semibold mb-6 pb-2 border-b ${color} font-[family-name:var(--font-playfair)]`}>
@@ -31,18 +37,41 @@ function LogColumn({ title, entries, color }: { title: string; entries: LogEntry
       {entries.length === 0 ? (
         <p className="text-gray-400 text-sm">Sin entradas aún.</p>
       ) : (
-        <ul className="space-y-4">
-          {entries.map(entry => (
-            <li key={entry.id} className="flex gap-4 items-start">
-              <span className="text-xs text-gray-400 pt-0.5 whitespace-nowrap font-[family-name:var(--font-poppins)]">
-                {formatDate(entry.createdAt)}
+        <>
+          <ul className="space-y-4">
+            {visible.map(entry => (
+              <li key={entry.id} className="flex gap-4 items-start">
+                <span className="text-xs text-gray-400 pt-0.5 whitespace-nowrap font-[family-name:var(--font-poppins)]">
+                  {formatDate(entry.createdAt)}
+                </span>
+                <span className="text-sm text-gray-600 font-[family-name:var(--font-poppins)] leading-relaxed">
+                  {entry.description}
+                </span>
+              </li>
+            ))}
+          </ul>
+          {totalPages > 1 && (
+            <div className="flex items-center gap-3 mt-8">
+              <button
+                onClick={() => setPage(p => Math.max(1, p - 1))}
+                disabled={page === 1}
+                className="text-xs text-gray-400 hover:text-gray-700 disabled:opacity-30 transition-colors font-[family-name:var(--font-poppins)]"
+              >
+                ← Anterior
+              </button>
+              <span className="text-xs text-gray-400 font-[family-name:var(--font-poppins)]">
+                {page} / {totalPages}
               </span>
-              <span className="text-sm text-gray-600 font-[family-name:var(--font-poppins)] leading-relaxed">
-                {entry.description}
-              </span>
-            </li>
-          ))}
-        </ul>
+              <button
+                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                disabled={page === totalPages}
+                className="text-xs text-gray-400 hover:text-gray-700 disabled:opacity-30 transition-colors font-[family-name:var(--font-poppins)]"
+              >
+                Siguiente →
+              </button>
+            </div>
+          )}
+        </>
       )}
     </div>
   );
@@ -64,7 +93,7 @@ export default function LogsPage() {
       <div className="container mx-auto px-4 max-w-5xl py-20">
         <h1 className="text-5xl font-bold mb-4 font-[family-name:var(--font-playfair)]">Registro de cambios</h1>
         <p className="text-gray-400 text-sm mb-16 font-[family-name:var(--font-poppins)]">
-          Los cambios en statements y conexiones se registran automáticamente.
+          Las actualizaciones de desarrollo, proposiciones y conexiones se registran automáticamente.
         </p>
 
         {loading ? (
@@ -77,8 +106,8 @@ export default function LogsPage() {
               color="border-gray-200"
             />
             <LogColumn
-              title="Statements"
-              entries={data.statements}
+              title="Proposiciones"
+              entries={data.proposiciones}
               color="border-gray-200"
             />
           </div>

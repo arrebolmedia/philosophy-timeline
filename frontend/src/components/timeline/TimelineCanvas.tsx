@@ -553,8 +553,9 @@ export function TimelineCanvas() {
         activePhilosList.sort((a, b) => (a.data.birthYear || 0) - (b.data.birthYear || 0));
         
         // Calculate compact diagonal positions (same axis, only active nodes)
-        const COMPACT_PHIL_STEP = 140;
-        const COMPACT_STAT_STEP = 50;
+        const COMPACT_PHIL_STEP = 80;
+        const COMPACT_PHIL_AFTER_GAP = 42;
+        const COMPACT_STAT_STEP = 26;
         const COMPACT_ANGLE = 40 * Math.PI / 180;
         const COMPACT_COS = Math.cos(COMPACT_ANGLE);
         const COMPACT_SIN = Math.sin(COMPACT_ANGLE);
@@ -571,9 +572,11 @@ export function TimelineCanvas() {
             y: COMPACT_ORIGIN_Y + compactDist * COMPACT_SIN,
           });
 
+          let firstActiveStmt = true;
           svg.selectAll('.statement').each(function(s: any) {
             if (s.philosopherId === item.data.id && activeStatements.has(s.id)) {
-              compactDist += COMPACT_STAT_STEP;
+              compactDist += firstActiveStmt ? COMPACT_PHIL_AFTER_GAP : COMPACT_STAT_STEP;
+              firstActiveStmt = false;
             }
           });
         });
@@ -629,8 +632,8 @@ export function TimelineCanvas() {
             }
           });
           activeStmts.sort((a, b) => (a.y || 0) - (b.y || 0));
-          activeStmts.forEach((s) => {
-            stmtDist2 += COMPACT_STAT_STEP;
+          activeStmts.forEach((s, idx) => {
+            stmtDist2 += idx === 0 ? COMPACT_PHIL_AFTER_GAP : COMPACT_STAT_STEP;
             newStatementPositions.set(s.id, {
               x: COMPACT_ORIGIN_X + stmtDist2 * COMPACT_COS,
               y: COMPACT_ORIGIN_Y + stmtDist2 * COMPACT_SIN,
@@ -741,8 +744,9 @@ export function TimelineCanvas() {
         });
         activePhilosList.sort((a, b) => (a.data.birthYear || 0) - (b.data.birthYear || 0));
 
-        const COMPACT_PHIL_STEP2 = 140;
-        const COMPACT_STAT_STEP2 = 50;
+        const COMPACT_PHIL_STEP2 = 80;
+        const COMPACT_PHIL_AFTER_GAP2 = 42;
+        const COMPACT_STAT_STEP2 = 26;
         const COMPACT_ANGLE2 = 40 * Math.PI / 180;
         const COMPACT_COS2 = Math.cos(COMPACT_ANGLE2);
         const COMPACT_SIN2 = Math.sin(COMPACT_ANGLE2);
@@ -759,9 +763,11 @@ export function TimelineCanvas() {
             y: COMPACT_ORIGIN_Y2 + compactDist2 * COMPACT_SIN2,
           });
 
+          let firstActiveStmt2 = true;
           svg.selectAll('.statement').each(function(s: any) {
             if (s.philosopherId === item.data.id && activeStatements.has(s.id)) {
-              compactDist2 += COMPACT_STAT_STEP2;
+              compactDist2 += firstActiveStmt2 ? COMPACT_PHIL_AFTER_GAP2 : COMPACT_STAT_STEP2;
+              firstActiveStmt2 = false;
             }
           });
         });
@@ -801,8 +807,8 @@ export function TimelineCanvas() {
             }
           });
           activeStmts.sort((a, b) => (a.y || 0) - (b.y || 0));
-          activeStmts.forEach((s) => {
-            stmtDist3 += COMPACT_STAT_STEP2;
+          activeStmts.forEach((s, idx) => {
+            stmtDist3 += idx === 0 ? COMPACT_PHIL_AFTER_GAP2 : COMPACT_STAT_STEP2;
             newStatementPositions.set(s.id, {
               x: COMPACT_ORIGIN_X2 + stmtDist3 * COMPACT_COS2,
               y: COMPACT_ORIGIN_Y2 + stmtDist3 * COMPACT_SIN2,

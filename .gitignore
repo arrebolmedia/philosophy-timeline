@@ -53,7 +53,8 @@ Thumbs.db
 docker-compose.override.yml
 
 # Logs
-logs/
+/logs/
+backend/logs/
 *.log
 
 # Temporary files
