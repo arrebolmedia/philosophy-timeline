@@ -22,7 +22,7 @@ function formatDate(iso: string) {
   });
 }
 
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 10;
 
 function LogColumn({ title, entries, color }: { title: string; entries: LogEntry[]; color: string }) {
   const [page, setPage] = useState(1);
