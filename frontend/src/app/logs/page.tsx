@@ -84,7 +84,7 @@ export default function LogsPage() {
   useEffect(() => {
     fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/changelog`)
       .then(r => r.json())
-      .then(r => { if (r.success) setData(r.data); else console.error('changelog error:', r); })
+      .then(r => { if (r.success) setData({ desarrollo: r.data?.desarrollo ?? [], proposiciones: r.data?.proposiciones ?? [] }); else console.error('changelog error:', r); })
       .catch(e => console.error('changelog fetch failed:', e))
       .finally(() => setLoading(false));
   }, []);
