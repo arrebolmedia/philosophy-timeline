@@ -498,19 +498,19 @@ router.get('/search', async (req: Request, res: Response) => {
 
 router.get('/changelog', async (_req: Request, res: Response) => {
   try {
-    const [dev, statements] = await Promise.all([
+    const [dev, proposiciones] = await Promise.all([
       prisma.changelog.findMany({
         where: { category: 'desarrollo' },
         orderBy: { createdAt: 'desc' },
         take: 100,
       }),
       prisma.changelog.findMany({
-        where: { category: 'statements' },
+        where: { category: { in: ['proposiciones', 'statements'] } },
         orderBy: { createdAt: 'desc' },
         take: 100,
       }),
     ]);
-    res.json({ success: true, data: { desarrollo: dev, statements } });
+    res.json({ success: true, data: { desarrollo: dev, proposiciones } });
   } catch (error) {
     console.error('Error fetching changelog:', error);
     res.status(500).json({ success: false, error: 'Error al obtener changelog' });
