@@ -502,12 +502,10 @@ router.get('/changelog', async (_req: Request, res: Response) => {
       prisma.changelog.findMany({
         where: { category: 'desarrollo' },
         orderBy: { createdAt: 'desc' },
-        take: 100,
       }),
       prisma.changelog.findMany({
         where: { category: { in: ['proposiciones', 'statements'] } },
         orderBy: { createdAt: 'desc' },
-        take: 100,
       }),
     ]);
     res.json({ success: true, data: { desarrollo: dev, proposiciones } });
