@@ -82,9 +82,10 @@ export default function LogsPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch(`${process.env.NEXT_PUBLIC_API_URL}/changelog`)
+    fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/changelog`)
       .then(r => r.json())
-      .then(r => { if (r.success) setData(r.data); })
+      .then(r => { if (r.success) setData(r.data); else console.error('changelog error:', r); })
+      .catch(e => console.error('changelog fetch failed:', e))
       .finally(() => setLoading(false));
   }, []);
 
