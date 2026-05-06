@@ -5,8 +5,20 @@ import { APP_VERSION } from '@/version';
 import * as d3 from 'd3';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import { Info, ZoomIn, ZoomOut, Maximize2, ChevronDown } from 'lucide-react';
+import { Info, ZoomIn, ZoomOut, Maximize2, ChevronDown, Download } from 'lucide-react';
 import type { TimelineData, StatementNode, ConnectionLink, PhilosopherNode } from '@/types/timeline';
+
+const CONNECTION_COLORS = {
+  resonate: '#86efac',
+  oppose:   '#fca5a5',
+  default:  '#d1d5db',
+} as const;
+
+function colorFor(type: string): string {
+  if (['agreement','expansion','inspiration','influence','resonate'].includes(type)) return CONNECTION_COLORS.resonate;
+  if (['disagreement','refutation','oppose'].includes(type)) return CONNECTION_COLORS.oppose;
+  return CONNECTION_COLORS.default;
+}
 
 export function TimelineCanvas() {
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -14,6 +26,10 @@ export function TimelineCanvas() {
   const zoomRef = useRef<any>(null);
   const filterActiveRef = useRef<boolean>(false);
   const initialZoomRef = useRef<any>(null);
+  const pendingResetRef = useRef<boolean>(false);
+  const skipZoomOnClearRef = useRef<boolean>(false);
+  const prevTransformRef = useRef<d3.ZoomTransform>(d3.zoomIdentity.translate(50, 50).scale(0.8));
+  const preFilterTransformRef = useRef<d3.ZoomTransform | null>(null);
   const filterTimestampRef = useRef<number>(0);
   const [data, setData] = useState<TimelineData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -25,6 +41,7 @@ export function TimelineCanvas() {
   const [filteredPhilosopher, setFilteredPhilosopher] = useState<number | null>(null);
   const [filteredStatement, setFilteredStatement] = useState<number | null>(null);
   const [legendCollapsed, setLegendCollapsed] = useState(false);
+  const [canvasKey, setCanvasKey] = useState(0);
 
   useEffect(() => {
     const fetchTimelineData = async () => {
@@ -46,6 +63,17 @@ export function TimelineCanvas() {
   }, []);
 
   useEffect(() => {
+    if (!containerRef.current) return;
+    const ro = new ResizeObserver(() => {
+      if ((containerRef.current?.clientWidth ?? 0) > 50) {
+        setCanvasKey(k => k + 1);
+      }
+    });
+    ro.observe(containerRef.current);
+    return () => ro.disconnect();
+  }, []);
+
+  useEffect(() => {
     if (!data || !svgRef.current || !containerRef.current) return;
 
     const svg = d3.select(svgRef.current);
@@ -53,6 +81,7 @@ export function TimelineCanvas() {
 
     const width = containerRef.current.clientWidth;
     const height = containerRef.current.clientHeight;
+    if (width < 50 || height < 50) return;
 
     svg.attr('width', width)
        .attr('height', height)
@@ -65,14 +94,74 @@ export function TimelineCanvas() {
     // Create main group for zoom/pan transformations
     const g = svg.append('g').attr('class', 'main-group');
 
-    // Setup zoom behavior: scroll to zoom, drag to pan
+    // Diagonal axis direction (matches layout ANGLE = 40°)
+    const _diagCos = Math.cos(40 * Math.PI / 180);
+    const _diagSin = Math.sin(40 * Math.PI / 180);
+
+    // Wheel zoom with inertia — intercept native wheel, bypass D3 zoom handler
+    let _zoomVelocity = 0;
+    let _zoomRaf = 0;
+    let _zoomDebounce = 0;
+    let _zoomCx = 0;
+    let _zoomCy = 0;
+
+    const applyZoomMomentum = () => {
+      _zoomVelocity *= 0.88;
+      if (Math.abs(_zoomVelocity) < 0.0003) return;
+      const cur = prevTransformRef.current;
+      const targetK = Math.max(0.1, Math.min(4, cur.k * (1 + _zoomVelocity)));
+      const mTx = _zoomCx - (_zoomCx - cur.x) * (targetK / cur.k);
+      const mTy = _zoomCy - (_zoomCy - cur.y) * (targetK / cur.k);
+      const mdx = mTx - cur.x;
+      const mdy = mTy - cur.y;
+      const mScalar = mdx * _diagCos + mdy * _diagSin;
+      const next = d3.zoomIdentity
+        .translate(cur.x + mScalar * _diagCos, cur.y + mScalar * _diagSin)
+        .scale(targetK);
+      prevTransformRef.current = next;
+      g.attr('transform', next.toString());
+      svg.call(zoom.transform as any, next);
+      _zoomRaf = requestAnimationFrame(applyZoomMomentum);
+    };
+
     const zoom = d3.zoom<SVGSVGElement, unknown>()
-      .scaleExtent([0.1, 4]) // Allow zoom from 10% to 400%
-      .on('zoom', (event) => {
-        g.attr('transform', event.transform);
-        // Track last zoom time to prevent click events during/after zoom
-        (svg.node() as any).__lastZoomTime = Date.now();
-      });
+      .scaleExtent([0.1, 4])
+      .filter(() => false)  // disable all D3 zoom input — handled manually below
+      .on('zoom', () => {});
+
+    svg.node()!.addEventListener('wheel', (e: WheelEvent) => {
+      e.preventDefault();
+      cancelAnimationFrame(_zoomRaf);
+      clearTimeout(_zoomDebounce);
+
+      _zoomCx = e.offsetX;
+      _zoomCy = e.offsetY;
+
+      // Normalize delta across trackpad / mouse wheel
+      const delta = -e.deltaY * (e.deltaMode === 1 ? 20 : e.deltaMode === 2 ? 400 : 1);
+      const factor = Math.pow(1.001, delta);
+
+      // Apply immediate zoom
+      const cur = prevTransformRef.current;
+      const targetK = Math.max(0.1, Math.min(4, cur.k * factor));
+      const mTx = _zoomCx - (_zoomCx - cur.x) * (targetK / cur.k);
+      const mTy = _zoomCy - (_zoomCy - cur.y) * (targetK / cur.k);
+      const mdx = mTx - cur.x;
+      const mdy = mTy - cur.y;
+      const mScalar = mdx * _diagCos + mdy * _diagSin;
+      const next = d3.zoomIdentity
+        .translate(cur.x + mScalar * _diagCos, cur.y + mScalar * _diagSin)
+        .scale(targetK);
+      prevTransformRef.current = next;
+      g.attr('transform', next.toString());
+      svg.call(zoom.transform as any, next);
+
+      // Accumulate velocity continuously — no debounce pause
+      _zoomVelocity = _zoomVelocity * 0.7 + (factor - 1) * 0.3;
+
+      // Restart momentum loop each event (seamless handoff)
+      _zoomRaf = requestAnimationFrame(applyZoomMomentum);
+    }, { passive: false });
 
     // Store zoom reference for programmatic control
     zoomRef.current = zoom;
@@ -80,19 +169,71 @@ export function TimelineCanvas() {
     // Apply zoom behavior to SVG
     svg.call(zoom);
 
-    // Click on background to clear filters
+    // Diagonal drag with momentum
+    let _dragStartX = 0;
+    let _dragStartY = 0;
+    let _dragStartTransform = prevTransformRef.current;
+    let _lastScalar = 0;
+    let _prevScalar = 0;
+    let _momentumRaf = 0;
+
+    const drag = d3.drag<SVGSVGElement, unknown>()
+      .on('start', (event) => {
+        cancelAnimationFrame(_momentumRaf);
+        _dragStartX = event.x;
+        _dragStartY = event.y;
+        _dragStartTransform = prevTransformRef.current;
+        _lastScalar = 0;
+        _prevScalar = 0;
+        (svg.node() as any).__lastZoomTime = Date.now();
+      })
+      .on('drag', (event) => {
+        const dx = event.x - _dragStartX;
+        const dy = event.y - _dragStartY;
+        const scalar = dx * _diagCos + dy * _diagSin;
+        _prevScalar = _lastScalar;
+        _lastScalar = scalar;
+        const t = _dragStartTransform;
+        const newTransform = d3.zoomIdentity
+          .translate(t.x + scalar * _diagCos, t.y + scalar * _diagSin)
+          .scale(t.k);
+        prevTransformRef.current = newTransform;
+        g.attr('transform', newTransform.toString());
+        svg.call(zoom.transform as any, newTransform);
+        (svg.node() as any).__lastZoomTime = Date.now();
+      })
+      .on('end', () => {
+        // Momentum: velocity = last delta between two drag events
+        let velocity = _lastScalar - _prevScalar;
+        if (Math.abs(velocity) < 0.5) return;
+        const decay = 0.92;
+        const applyMomentum = () => {
+          velocity *= decay;
+          if (Math.abs(velocity) < 0.3) return;
+          const cur = prevTransformRef.current;
+          const newTransform = d3.zoomIdentity
+            .translate(cur.x + velocity * _diagCos, cur.y + velocity * _diagSin)
+            .scale(cur.k);
+          prevTransformRef.current = newTransform;
+          g.attr('transform', newTransform.toString());
+          svg.call(zoom.transform as any, newTransform);
+          _momentumRaf = requestAnimationFrame(applyMomentum);
+        };
+        _momentumRaf = requestAnimationFrame(applyMomentum);
+      });
+
+    svg.call(drag);
+
+    // Click on background to clear filters (no zoom change)
     svg.on('click', (event) => {
-      // Only clear if clicked directly on SVG (not on children)
       if (event.target === event.currentTarget) {
+        skipZoomOnClearRef.current = true;
         setFilteredPhilosopher(null);
         setFilteredStatement(null);
       }
     });
 
-    // Set initial zoom to show content nicely
-    const initialTransform = d3.zoomIdentity.translate(50, 50).scale(0.8);
-    initialZoomRef.current = initialTransform;
-    svg.call(zoom.transform as any, initialTransform);
+    // Initial transform calculated after layout (see below, after philosophers loop)
 
     // Handle API response format which may have nested structure
     const philosophers: PhilosopherNode[] = [...(data.philosophers || [])].map((p: any) => {
@@ -132,29 +273,30 @@ export function TimelineCanvas() {
       });
     });
 
-    const axisTotalDist = dist;
+    // Dynamic initial transform — fit-to-content scale, axis anchored to upper-left
+    const axisEndX = ORIGIN_X + dist * cosA;
+    const axisEndY = ORIGIN_Y + dist * sinA;
+    const fitPad = 60;
+    const rawFitK = Math.min(
+      (width  - fitPad * 2) / (axisEndX + 200),
+      (height - fitPad * 2) / (axisEndY + 100)
+    );
+    const fitK = Math.max(0.03, Math.min(4, rawFitK));
+    // Center the axis content on screen
+    const midX = (ORIGIN_X + axisEndX) / 2;
+    const midY = (ORIGIN_Y + axisEndY) / 2;
+    const initialTransform = d3.zoomIdentity.translate(width / 2 - midX * fitK, height / 2 - midY * fitK).scale(fitK);
+    initialZoomRef.current = initialTransform;
+    prevTransformRef.current = initialTransform;
+    // Set directly on DOM — bypasses the diagonal-projection zoom handler
+    g.attr('transform', initialTransform.toString());
+    (svg.node() as any).__zoom = initialTransform;
 
 // ===== DRAW CONNECTIONS FIRST (bottom layer) =====
     const connG = g.append('g').attr('class', 'connections');
     const conns: ConnectionLink[] = data.connections || [];
     console.log('Drawing connections:', conns.length, conns);
 
-    const colorFor = (type: string) => {
-      switch (type) {
-        case 'agreement':
-        case 'expansion':
-        case 'inspiration':
-        case 'influence':
-        case 'resonate':
-          return '#a7f3d0'; // green
-        case 'disagreement':
-        case 'refutation':
-        case 'oppose':
-          return '#fecaca'; // red
-        default:
-          return '#d1d5db'; // gray
-      }
-    };
 
     // Perfect 180° semicircle arcs using SVG arc command.
     // Green (positive): sweeps above the chord (sweep-flag=0, upward arc).
@@ -205,6 +347,7 @@ export function TimelineCanvas() {
       })
       .on('click', (event, d: any) => {
         event.stopPropagation();
+        if (!filterActiveRef.current) preFilterTransformRef.current = prevTransformRef.current;
         setFilteredPhilosopher(prev => prev === d.id ? null : d.id);
         setFilteredStatement(null);
       });
@@ -314,12 +457,13 @@ export function TimelineCanvas() {
       })
       .on('click', (event, d: any) => {
         event.stopPropagation();
+        if (!filterActiveRef.current) preFilterTransformRef.current = prevTransformRef.current;
         setFilteredStatement(prev => prev === d.id ? null : d.id);
         setFilteredPhilosopher(null);
       });
 
     // Statement text (longer, single line)
-    stmtNodes.append('text').attr('x', 0).attr('y', 0).text((d: any) => truncate(d.text, 200))
+    stmtNodes.append('text').attr('class', 'stmt-text').attr('x', 0).attr('y', 0).text((d: any) => truncate(d.text, 200))
       .style('font-size', '11px').style('fill', '#222');
 
     // Tags inline, smaller
@@ -339,7 +483,7 @@ export function TimelineCanvas() {
         // No connections - gray dot
         d3.select(this).append('circle')
           .attr('cx', -10).attr('cy', -4).attr('r', 3)
-          .attr('fill', '#d1d5db').attr('opacity', 1);
+          .attr('fill', CONNECTION_COLORS.default).attr('opacity', 1);
       } else {
         // Count positive vs negative connections
         const positiveCount = relatedConnections.filter((c: ConnectionLink) => 
@@ -353,12 +497,12 @@ export function TimelineCanvas() {
           // Only positive - green dot
           d3.select(this).append('circle')
             .attr('cx', -10).attr('cy', -4).attr('r', 3)
-            .attr('fill', '#a7f3d0').attr('opacity', 1);
+            .attr('fill', CONNECTION_COLORS.resonate).attr('opacity', 1);
         } else if (negativeCount > 0 && positiveCount === 0) {
           // Only negative - red dot
           d3.select(this).append('circle')
             .attr('cx', -10).attr('cy', -4).attr('r', 3)
-            .attr('fill', '#fecaca').attr('opacity', 1);
+            .attr('fill', CONNECTION_COLORS.oppose).attr('opacity', 1);
         } else if (positiveCount > 0 && negativeCount > 0) {
           // Both - split half green, half red using a gradient or two half-circles
           const g = d3.select(this);
@@ -366,12 +510,12 @@ export function TimelineCanvas() {
           // Left half - green
           g.append('path')
             .attr('d', 'M -10 -7 A 3 3 0 0 1 -10 -1 Z')
-            .attr('fill', '#a7f3d0').attr('opacity', 1);
+            .attr('fill', CONNECTION_COLORS.resonate).attr('opacity', 1);
 
           // Right half - red
           g.append('path')
             .attr('d', 'M -10 -7 A 3 3 0 0 0 -10 -1 Z')
-            .attr('fill', '#fecaca').attr('opacity', 1);
+            .attr('fill', CONNECTION_COLORS.oppose).attr('opacity', 1);
         }
       }
     });
@@ -388,7 +532,7 @@ export function TimelineCanvas() {
     }
 
     // no explicit cleanup necessary beyond clearing svg at start of effect
-  }, [data, highlightId]);
+  }, [data, highlightId, canvasKey]);
 
   // Zoom control functions
   const handleZoomIn = useCallback(() => {
@@ -405,7 +549,7 @@ export function TimelineCanvas() {
     }
   }, []);
 
-  const handleResetZoom = useCallback(() => {
+  const doResetZoom = useCallback(() => {
     if (!svgRef.current || !zoomRef.current || !containerRef.current) return;
     const svg = d3.select(svgRef.current);
     const g = svg.select('g');
@@ -421,10 +565,204 @@ export function TimelineCanvas() {
     );
     const tx = svgW / 2 - (bbox.x + bbox.width / 2) * scale;
     const ty = svgH / 2 - (bbox.y + bbox.height / 2) * scale;
-    svg.transition().duration(600).call(
-      zoomRef.current.transform,
-      d3.zoomIdentity.translate(tx, ty).scale(scale)
+    const targetTransform = d3.zoomIdentity.translate(tx, ty).scale(scale);
+    prevTransformRef.current = targetTransform;
+    svg.select<SVGGElement>('g.main-group')
+      .transition().duration(600).ease(d3.easeCubicInOut)
+      .attr('transform', targetTransform.toString())
+      .on('end', () => { svg.call(zoomRef.current.transform as any, targetTransform); });
+  }, []);
+
+  const handleResetZoom = useCallback(() => {
+    pendingResetRef.current = true;
+    setFilteredPhilosopher(null);
+    setFilteredStatement(null);
+  }, []);
+
+  // Execute zoom reset after filters have been cleared and DOM has updated
+  useEffect(() => {
+    if (pendingResetRef.current && !filteredPhilosopher && !filteredStatement) {
+      pendingResetRef.current = false;
+      // Two rAF frames: first lets React paint, second lets D3 opacity effects settle
+      requestAnimationFrame(() => requestAnimationFrame(() => doResetZoom()));
+    }
+  }, [filteredPhilosopher, filteredStatement, doResetZoom]);
+
+  const handleExportPng = useCallback(async () => {
+    if (!svgRef.current) return;
+
+    const SCALE     = 3;
+    const PADDING   = 60;
+    const BG_COLOR  = '#ffffff';
+    const MAX_SIDE  = 8192;
+
+    const svgEl = svgRef.current;
+    const svg   = d3.select(svgEl);
+    const gNode = svg.select<SVGGElement>('g.main-group').node();
+    if (!gNode) return;
+
+    let bbox: { x: number; y: number; width: number; height: number };
+
+    if (filterActiveRef.current) {
+      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+      let found = false;
+
+      svg.selectAll<SVGGElement, unknown>('.philosopher-label, .statement, .connection').each(function () {
+        const el = this as SVGGElement;
+        if (parseFloat(el.style.opacity ?? '1') < 0.05) return;
+        try {
+          const b    = el.getBBox();
+          const ctm  = el.getCTM();
+          const gCTM = gNode.getCTM();
+          if (!ctm || !gCTM) return;
+          const m = gCTM.inverse().multiply(ctm);
+          [
+            { x: b.x,           y: b.y            },
+            { x: b.x + b.width, y: b.y            },
+            { x: b.x,           y: b.y + b.height },
+            { x: b.x + b.width, y: b.y + b.height },
+          ].forEach(({ x, y }) => {
+            const tx = m.a * x + m.c * y + m.e;
+            const ty = m.b * x + m.d * y + m.f;
+            if (tx < minX) minX = tx;
+            if (ty < minY) minY = ty;
+            if (tx > maxX) maxX = tx;
+            if (ty > maxY) maxY = ty;
+            found = true;
+          });
+        } catch { /* getBBox puede fallar en nodos ocultos */ }
+      });
+
+      if (!found) { alert('No hay elementos visibles para exportar.'); return; }
+      bbox = { x: minX, y: minY, width: maxX - minX, height: maxY - minY };
+    } else {
+      // Full timeline — iterate all nodes (same method, no opacity filter)
+      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+      let found = false;
+      svg.selectAll<SVGGElement, unknown>('.philosopher-label, .statement, .connection').each(function () {
+        const el = this as SVGGElement;
+        try {
+          const b    = el.getBBox();
+          const ctm  = el.getCTM();
+          const gCTM = gNode.getCTM();
+          if (!ctm || !gCTM) return;
+          const m = gCTM.inverse().multiply(ctm);
+          [
+            { x: b.x,           y: b.y            },
+            { x: b.x + b.width, y: b.y            },
+            { x: b.x,           y: b.y + b.height },
+            { x: b.x + b.width, y: b.y + b.height },
+          ].forEach(({ x, y }) => {
+            const tx = m.a * x + m.c * y + m.e;
+            const ty = m.b * x + m.d * y + m.f;
+            if (tx < minX) minX = tx;
+            if (ty < minY) minY = ty;
+            if (tx > maxX) maxX = tx;
+            if (ty > maxY) maxY = ty;
+            found = true;
+          });
+        } catch { /* skip */ }
+      });
+      if (!found) return;
+      bbox = { x: minX, y: minY, width: maxX - minX, height: maxY - minY };
+    }
+
+    const vx = bbox.x - PADDING;
+    const vy = bbox.y - PADDING;
+    const vw = bbox.width  + PADDING * 2;
+    const vh = bbox.height + PADDING * 2;
+
+    const rawScale = Math.min(SCALE, MAX_SIDE / Math.max(vw, vh));
+    const outW = Math.round(vw * rawScale);
+    const outH = Math.round(vh * rawScale);
+
+    const clone = svgEl.cloneNode(true) as SVGSVGElement;
+    clone.setAttribute('width',    String(outW));
+    clone.setAttribute('height',   String(outH));
+    clone.setAttribute('viewBox',  `${vx} ${vy} ${vw} ${vh}`);
+    clone.setAttribute('xmlns',    'http://www.w3.org/2000/svg');
+    clone.setAttribute('xmlns:xlink', 'http://www.w3.org/1999/xlink');
+    clone.querySelector('g.main-group')?.removeAttribute('transform');
+
+    const bgRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    bgRect.setAttribute('x',      String(vx));
+    bgRect.setAttribute('y',      String(vy));
+    bgRect.setAttribute('width',  String(vw));
+    bgRect.setAttribute('height', String(vh));
+    bgRect.setAttribute('fill',   BG_COLOR);
+    clone.insertBefore(bgRect, clone.firstChild);
+
+    clone.querySelectorAll('text').forEach((t) => {
+      if (!t.style.fontFamily) t.style.fontFamily = 'system-ui, sans-serif';
+    });
+
+    // Copyright watermark — esquina inferior derecha
+    const year = new Date().getFullYear();
+    const copyrightEl = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    copyrightEl.textContent = `© ${year} Anthony Cazares`;
+    copyrightEl.setAttribute('x', String(vx + vw - PADDING / 2));
+    copyrightEl.setAttribute('y', String(vy + vh - PADDING / 4));
+    copyrightEl.setAttribute('text-anchor', 'end');
+    copyrightEl.setAttribute('dominant-baseline', 'auto');
+    copyrightEl.style.fontSize = '11px';
+    copyrightEl.style.fill = '#9ca3af';
+    copyrightEl.style.fontFamily = 'system-ui, sans-serif';
+    clone.appendChild(copyrightEl);
+
+    await Promise.all(
+      Array.from(clone.querySelectorAll('image')).map(async (imgEl) => {
+        const href = imgEl.getAttribute('href') || imgEl.getAttribute('xlink:href') || '';
+        if (!href || href.startsWith('data:')) return;
+        try {
+          const resp = await fetch(href, { mode: 'cors' });
+          if (!resp.ok) throw new Error('fetch failed');
+          const blob = await resp.blob();
+          const dataUrl = await new Promise<string>((res, rej) => {
+            const r = new FileReader();
+            r.onload = () => res(r.result as string);
+            r.onerror = rej;
+            r.readAsDataURL(blob);
+          });
+          imgEl.setAttribute('href', dataUrl);
+          imgEl.setAttributeNS('http://www.w3.org/1999/xlink', 'xlink:href', dataUrl);
+        } catch {
+          imgEl.remove();
+        }
+      })
     );
+
+    const svgString = new XMLSerializer().serializeToString(clone);
+    const svgUrl    = URL.createObjectURL(new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' }));
+
+    try {
+      await new Promise<void>((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          canvas.width  = outW;
+          canvas.height = outH;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) { reject(new Error('No canvas context')); return; }
+          ctx.fillStyle = BG_COLOR;
+          ctx.fillRect(0, 0, outW, outH);
+          ctx.drawImage(img, 0, 0, outW, outH);
+          try {
+            const link = document.createElement('a');
+            link.download = 'filosofia-timeline.png';
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+            resolve();
+          } catch (e) { reject(e); }
+        };
+        img.onerror = reject;
+        img.src = svgUrl;
+      });
+    } catch (err) {
+      console.error('Export PNG failed:', err);
+      alert('No se pudo exportar la imagen.');
+    } finally {
+      URL.revokeObjectURL(svgUrl);
+    }
   }, []);
 
   // Effect to handle hover and filter opacity changes
@@ -497,9 +835,9 @@ export function TimelineCanvas() {
         }
       });
       
-      // Add connections between active statements
+      // Add only connections that directly involve the selected statement
       connections.forEach((conn: ConnectionLink) => {
-        if (activeStatements.has(conn.statementFromId) && activeStatements.has(conn.statementToId)) {
+        if (conn.statementFromId === filteredStatement || conn.statementToId === filteredStatement) {
           activeConnections.add(`${conn.statementFromId}-${conn.statementToId}`);
         }
       });
@@ -545,14 +883,25 @@ export function TimelineCanvas() {
       });
     }
 
+    // Capture click-outside flag BEFORE clearing it — used below to suppress initial-zoom restore
+    const isClickOutside = wasFilterActive && skipZoomOnClearRef.current && !!preFilterTransformRef.current;
+
+    // Click-outside restore: smooth transition back to pre-filter position
+    if (isClickOutside) {
+      const restoreT = preFilterTransformRef.current!;
+      skipZoomOnClearRef.current = false;
+      prevTransformRef.current = restoreT;
+      d3.select(svgRef.current).select<SVGGElement>('g.main-group')
+        .transition().duration(500).ease(d3.easeCubicInOut)
+        .attr('transform', restoreT.toString())
+        .on('end', () => { d3.select(svgRef.current).call(zoomRef.current.transform as any, restoreT); });
+    }
+
     // Apply opacity changes
     const hasFilter = filteredPhilosopher || filteredStatement;
     const hasHover = hoveredPhilosopher || hoveredStatement;
     const isActive = hasFilter || hasHover;
-    
-    // Only restore zoom if we're clearing a FILTER, not just hover
-    const shouldRestoreZoom = !hasFilter && !hasHover;
-    
+
     if (isActive) {
       // On FILTER by statement (click), reorganize in compact staircase layout
       if (filteredStatement) {
@@ -606,29 +955,19 @@ export function TimelineCanvas() {
           
           const width = maxX - minX;
           const height = maxY - minY;
-          const centerX = minX + width / 2;
-          const centerY = minY + height / 2;
-          
-          // Calculate scale to fit content (with some padding)
           const svgWidth = containerRef.current?.clientWidth || 1200;
           const svgHeight = containerRef.current?.clientHeight || 800;
-          const scaleX = svgWidth / width;
-          const scaleY = svgHeight / height;
-          const scale = Math.min(scaleX, scaleY, 1.2); // Max zoom 1.2x
+          const scale = Math.min(svgWidth / width, svgHeight / height, 1.2);
           
-          // Calculate translation to center the content
-          const translateX = svgWidth / 2 - centerX * scale;
-          const translateY = svgHeight / 2 - centerY * scale;
-          
-          // Apply zoom transition
-          svg.transition()
-            .duration(500)
-            .call(
-              zoomRef.current.transform,
-              d3.zoomIdentity.translate(translateX, translateY).scale(scale)
-            );
+          // Apply zoom transition — sync D3 state silently after animation ends
+          const targetTransform = d3.zoomIdentity.translate(40, 40).scale(scale);
+          prevTransformRef.current = targetTransform;
+          svg.select<SVGGElement>('g.main-group')
+            .transition().duration(500).ease(d3.easeCubicInOut)
+            .attr('transform', targetTransform.toString())
+            .on('end', () => { svg.call(zoomRef.current.transform as any, targetTransform); });
         }
-        
+
         // Disable hover events during animation
         setHoveredPhilosopher(null);
         setHoveredStatement(null);
@@ -656,6 +995,7 @@ export function TimelineCanvas() {
 
         // Move philosophers to compact diagonal positions, hide others
         svg.selectAll('.philosopher-label')
+          .style('pointer-events', (d: any) => activePhilosophers.has(d.id) ? 'all' : 'none')
           .transition()
           .duration(500)
           .style('opacity', (d: any) => activePhilosophers.has(d.id) ? 1 : 0)
@@ -669,6 +1009,7 @@ export function TimelineCanvas() {
 
         // Move statements to packed diagonal positions, hide others
         svg.selectAll('.statement')
+          .style('pointer-events', (d: any) => activeStatements.has(d.id) ? 'all' : 'none')
           .transition()
           .duration(500)
           .style('opacity', (d: any) => activeStatements.has(d.id) ? 1 : 0)
@@ -680,69 +1021,58 @@ export function TimelineCanvas() {
             return `translate(${d.x}, ${d.y})`;
           });
         
-        // Hide original connections temporarily
-        svg.selectAll('.connection')
-          .transition()
-          .duration(250)
-          .style('opacity', 0);
+        // Negrita en el statement clickeado (reset previo para limpiar selección anterior)
+        svg.selectAll('.stmt-text').style('font-weight', null);
+        svg.selectAll<SVGGElement, any>('.statement')
+          .filter((d: any) => d.id === filteredStatement)
+          .select('.stmt-text')
+          .style('font-weight', '900');
+
+        // Animate connections: fade out irrelevant, morph active ones to new positions
+        const arcPath = (fx: number, fy: number, tx: number, ty: number, isRed: boolean) => {
+          const ddx = tx - fx, ddy = ty - fy;
+          const r = Math.sqrt(ddx * ddx + ddy * ddy) / 2;
+          const sweep = isRed ? (ddx >= 0 ? 0 : 1) : (ddx >= 0 ? 1 : 0);
+          return `M ${fx} ${fy} A ${r} ${r} 0 0 ${sweep} ${tx} ${ty}`;
+        };
 
         const filterTs = Date.now();
         filterTimestampRef.current = filterTs;
 
-        // Redraw connections with new positions after movement
-        setTimeout(() => {
-          if (filterTimestampRef.current !== filterTs) return;
-          svg.selectAll('.connection').remove();
+        // Get current statement screen positions before transition
+        const oldStmtPos = new Map<number, {x: number, y: number}>();
+        svg.selectAll<SVGGElement, any>('.statement').each(function(d: any) {
+          const t = d3.select(this).attr('transform') || '';
+          const m = t.match(/translate\(([^,]+),([^)]+)\)/);
+          if (m) oldStmtPos.set(d.id, { x: +m[1], y: +m[2] });
+        });
 
-          const connG = svg.select('g').insert('g', ':first-child').attr('class', 'connections');
-          
-          connections.forEach((conn: any) => {
-            const key = `${conn.statementFromId}-${conn.statementToId}`;
-            if (!activeConnections.has(key) && activeConnections.size > 0) return;
-            
-            if (activeStatements.size > 0) {
-              const isActive = activeStatements.has(conn.statementFromId) && 
-                             activeStatements.has(conn.statementToId);
-              if (!isActive) return;
-            }
-            
-            // Find statement positions after transformation
-            let fromPos: {x: number, y: number} | null = null;
-            let toPos: {x: number, y: number} | null = null;
-            
-            const fromStmtPos = newStatementPositions.get(conn.statementFromId);
-            const toStmtPos = newStatementPositions.get(conn.statementToId);
-            if (!fromStmtPos || !toStmtPos) return;
-
-            fromPos = { x: fromStmtPos.x - 10, y: fromStmtPos.y - 4 };
-            toPos   = { x: toStmtPos.x - 10,   y: toStmtPos.y - 4 };
-
-            if (fromPos !== null && toPos !== null) {
-              const from: {x: number, y: number} = fromPos;
-              const to: {x: number, y: number} = toPos;
-              const isRed1 = ['disagreement','refutation','oppose'].includes(conn.connectionType as string);
-              const colorFor = (type: string) => {
-                if (['agreement','expansion','inspiration','influence','resonate'].includes(type)) return '#a7f3d0';
-                if (['disagreement','refutation','oppose'].includes(type)) return '#fecaca';
-                return '#d1d5db';
-              };
-              const ddx1 = to.x - from.x, ddy1 = to.y - from.y;
-              const r1 = Math.sqrt(ddx1 * ddx1 + ddy1 * ddy1) / 2;
-              const aboveSweep1 = ddx1 >= 0 ? 1 : 0;
-              const sweep1 = isRed1 ? 1 - aboveSweep1 : aboveSweep1;
-              connG.append('path')
-                .attr('class', 'connection')
-                .attr('data-from', conn.statementFromId)
-                .attr('data-to', conn.statementToId)
-                .attr('d', `M ${from.x} ${from.y} A ${r1} ${r1} 0 0 ${sweep1} ${to.x} ${to.y}`)
-                .attr('fill', 'none')
-                .attr('stroke', colorFor(conn.connectionType))
-                .attr('stroke-width', 2)
-                .style('opacity', 0)
-                .transition().duration(250).style('opacity', 1);
-            }
-          });
-        }, 550);
+        // Remove connections not in activeConnections, morph the rest
+        svg.selectAll<SVGPathElement, any>('.connection').each(function() {
+          const el = d3.select(this);
+          const fromId = +(el.attr('data-from') || 0);
+          const toId   = +(el.attr('data-to')   || 0);
+          const key = `${fromId}-${toId}`;
+          if (!activeConnections.has(key)) {
+            el.transition().duration(200).style('opacity', 0).remove();
+            return;
+          }
+          // Morph to new position in sync with node transition
+          const toStmtPos = newStatementPositions.get(toId);
+          const frStmtPos = newStatementPositions.get(fromId);
+          if (!toStmtPos || !frStmtPos) { el.transition().duration(200).style('opacity', 0).remove(); return; }
+          const conn = connections.find((c: any) => c.statementFromId === fromId && c.statementToId === toId);
+          const isRed = conn ? ['disagreement','refutation','oppose'].includes(conn.connectionType) : false;
+          const oldFrom = oldStmtPos.get(fromId);
+          const oldTo   = oldStmtPos.get(toId);
+          const startPath = oldFrom && oldTo
+            ? arcPath(oldFrom.x - 10, oldFrom.y - 4, oldTo.x - 10, oldTo.y - 4, isRed)
+            : el.attr('d');
+          const endPath = arcPath(frStmtPos.x - 10, frStmtPos.y - 4, toStmtPos.x - 10, toStmtPos.y - 4, isRed);
+          el.attr('d', startPath)
+            .transition().duration(500).ease(d3.easeCubicInOut)
+            .attrTween('d', () => d3.interpolateString(startPath, endPath));
+        });
         
       } else if (filteredPhilosopher) {
         // Compact staircase: clicked philosopher (all statements) + connected philosophers (only related statements)
@@ -795,17 +1125,15 @@ export function TimelineCanvas() {
           const maxY = endY2 + 100;
           const width = maxX - minX;
           const height = maxY - minY;
-          const centerX = minX + width / 2;
-          const centerY = minY + height / 2;
           const svgWidth = containerRef.current?.clientWidth || 1200;
           const svgHeight = containerRef.current?.clientHeight || 800;
           const scale = Math.min(svgWidth / width, svgHeight / height, 1.2);
-          const translateX = svgWidth / 2 - centerX * scale;
-          const translateY = svgHeight / 2 - centerY * scale;
-          svg.transition().duration(500).call(
-            zoomRef.current.transform,
-            d3.zoomIdentity.translate(translateX, translateY).scale(scale)
-          );
+          const targetTransform2 = d3.zoomIdentity.translate(40, 40).scale(scale);
+          prevTransformRef.current = targetTransform2;
+          svg.select<SVGGElement>('g.main-group')
+            .transition().duration(500).ease(d3.easeCubicInOut)
+            .attr('transform', targetTransform2.toString())
+            .on('end', () => { svg.call(zoomRef.current.transform as any, targetTransform2); });
         }
 
         // Pre-compute packed statement positions along diagonal (no gaps)
@@ -831,6 +1159,7 @@ export function TimelineCanvas() {
 
         // Move philosophers to compact positions, hide others
         svg.selectAll('.philosopher-label')
+          .style('pointer-events', (d: any) => activePhilosophers.has(d.id) ? 'all' : 'none')
           .transition().duration(500)
           .style('opacity', (d: any) => activePhilosophers.has(d.id) ? 1 : 0)
           .attr('transform', function(d: any) {
@@ -843,6 +1172,7 @@ export function TimelineCanvas() {
 
         // Move statements to packed positions, hide others
         svg.selectAll('.statement')
+          .style('pointer-events', (d: any) => activeStatements.has(d.id) ? 'all' : 'none')
           .transition().duration(500)
           .style('opacity', (d: any) => activeStatements.has(d.id) ? 1 : 0)
           .attr('transform', function(d: any) {
@@ -853,48 +1183,53 @@ export function TimelineCanvas() {
             return `translate(${d.x}, ${d.y})`;
           });
 
-        // Hide connections, redraw after movement with packed positions
-        svg.selectAll('.connection').transition().duration(250).style('opacity', 0);
+        // Negrita + tamaño en el filósofo clickeado
+        svg.selectAll('.philo-name').style('font-weight', '700').style('font-size', '15px');
+        svg.selectAll<SVGGElement, any>('.philosopher-label')
+          .filter((d: any) => d.id === filteredPhilosopher)
+          .select('.philo-name')
+          .style('font-weight', '900').style('font-size', '17px');
 
-        const filterTs2 = Date.now();
-        filterTimestampRef.current = filterTs2;
+        // Animate connections in sync with node movement
+        const arcPath2 = (fx: number, fy: number, tx: number, ty: number, isRed: boolean) => {
+          const ddx = tx - fx, ddy = ty - fy;
+          const r = Math.sqrt(ddx * ddx + ddy * ddy) / 2;
+          const sweep = isRed ? (ddx >= 0 ? 0 : 1) : (ddx >= 0 ? 1 : 0);
+          return `M ${fx} ${fy} A ${r} ${r} 0 0 ${sweep} ${tx} ${ty}`;
+        };
 
-        setTimeout(() => {
-          if (filterTimestampRef.current !== filterTs2) return;
-          svg.selectAll('.connection').remove();
-          const connG = svg.select('g').insert('g', ':first-child').attr('class', 'connections');
+        // Snapshot current statement positions before transition
+        const oldStmtPos2 = new Map<number, {x: number, y: number}>();
+        svg.selectAll<SVGGElement, any>('.statement').each(function(d: any) {
+          const t = d3.select(this).attr('transform') || '';
+          const m = t.match(/translate\(([^,]+),([^)]+)\)/);
+          if (m) oldStmtPos2.set(d.id, { x: +m[1], y: +m[2] });
+        });
 
-          const colorFor = (type: string) => {
-            if (['agreement','expansion','inspiration','influence','resonate'].includes(type)) return '#a7f3d0';
-            if (['disagreement','refutation','oppose'].includes(type)) return '#fecaca';
-            return '#d1d5db';
-          };
-
-          connections.forEach((conn: any) => {
-            if (!activeConnections.has(`${conn.statementFromId}-${conn.statementToId}`)) return;
-            const fromStmtPos = newStatementPositions.get(conn.statementFromId);
-            const toStmtPos = newStatementPositions.get(conn.statementToId);
-            if (!fromStmtPos || !toStmtPos) return;
-
-            const from = { x: fromStmtPos.x - 10, y: fromStmtPos.y - 4 };
-            const to   = { x: toStmtPos.x - 10,   y: toStmtPos.y - 4 };
-            const isRed = ['disagreement','refutation','oppose'].includes(conn.connectionType);
-            const ddx = to.x - from.x, ddy = to.y - from.y;
-            const r = Math.sqrt(ddx * ddx + ddy * ddy) / 2;
-            const aboveSweep = ddx >= 0 ? 1 : 0;
-            const sweep = isRed ? 1 - aboveSweep : aboveSweep;
-            connG.append('path')
-              .attr('class', 'connection')
-              .attr('data-from', conn.statementFromId)
-              .attr('data-to', conn.statementToId)
-              .attr('d', `M ${from.x} ${from.y} A ${r} ${r} 0 0 ${sweep} ${to.x} ${to.y}`)
-              .attr('fill', 'none')
-              .attr('stroke', colorFor(conn.connectionType))
-              .attr('stroke-width', 2)
-              .style('opacity', 0)
-              .transition().duration(250).style('opacity', 1);
-          });
-        }, 550);
+        svg.selectAll<SVGPathElement, any>('.connection').each(function() {
+          const el = d3.select(this);
+          const fromId = +(el.attr('data-from') || 0);
+          const toId   = +(el.attr('data-to')   || 0);
+          const key = `${fromId}-${toId}`;
+          if (!activeConnections.has(key)) {
+            el.transition().duration(200).style('opacity', 0).remove();
+            return;
+          }
+          const frStmtPos = newStatementPositions.get(fromId);
+          const toStmtPos = newStatementPositions.get(toId);
+          if (!frStmtPos || !toStmtPos) { el.transition().duration(200).style('opacity', 0).remove(); return; }
+          const conn = connections.find((c: any) => c.statementFromId === fromId && c.statementToId === toId);
+          const isRed = conn ? ['disagreement','refutation','oppose'].includes(conn.connectionType) : false;
+          const oldFrom = oldStmtPos2.get(fromId);
+          const oldTo   = oldStmtPos2.get(toId);
+          const startPath = oldFrom && oldTo
+            ? arcPath2(oldFrom.x - 10, oldFrom.y - 4, oldTo.x - 10, oldTo.y - 4, isRed)
+            : el.attr('d');
+          const endPath = arcPath2(frStmtPos.x - 10, frStmtPos.y - 4, toStmtPos.x - 10, toStmtPos.y - 4, isRed);
+          el.attr('d', startPath)
+            .transition().duration(500).ease(d3.easeCubicInOut)
+            .attrTween('d', () => d3.interpolateString(startPath, endPath));
+        });
 
       } else if (hasHover && !hasFilter) {
         // HOVER mode: just fade, don't move (only when NOT filtered)
@@ -930,29 +1265,29 @@ export function TimelineCanvas() {
       }
     } else {
       // Reset all to normal
-      // Disable hover events during animation
       setHoveredPhilosopher(null);
       setHoveredStatement(null);
-      
-      // Only restore zoom if we had a filter before (not just hover)
-      if (initialZoomRef.current && wasFilterActive) {
+
+      // Restore zoom to initial on explicit filter clear (not click-outside — handled above)
+      if (initialZoomRef.current && wasFilterActive && !isClickOutside) {
         svg.transition()
           .duration(400)
-          .call(
-            zoomRef.current.transform,
-            initialZoomRef.current
-          );
+          .call(zoomRef.current.transform, initialZoomRef.current);
       }
-      
+      skipZoomOnClearRef.current = false;
+
+      svg.selectAll('.philo-name').style('font-weight', '700').style('font-size', '15px');
+      svg.selectAll('.stmt-text').style('font-weight', null);
+
       svg.selectAll('.philosopher-label')
+        .style('pointer-events', 'all')
         .transition()
         .duration(400)
         .style('opacity', 1)
-        .attr('transform', (d: any) => `translate(${d.x}, ${d.y})`)
-        .on('end', function() {
-        });
+        .attr('transform', (d: any) => `translate(${d.x}, ${d.y})`);
 
       svg.selectAll('.statement')
+        .style('pointer-events', 'all')
         .transition()
         .duration(300)
         .style('opacity', 1)
@@ -969,11 +1304,6 @@ export function TimelineCanvas() {
         setTimeout(() => {
           const connG = svg.select('g').insert('g', ':first-child').attr('class', 'connections');
           
-          const colorFor = (type: string) => {
-            if (type === 'agreement' || type === 'expansion' || type === 'inspiration' || type === 'influence' || type === 'resonate') return '#a7f3d0';
-            if (type === 'disagreement' || type === 'refutation' || type === 'oppose') return '#fecaca';
-            return '#d1d5db';
-          };
           
           connections.forEach((conn: any) => {
             // Find original statement positions
@@ -1093,6 +1423,15 @@ export function TimelineCanvas() {
             className="h-9 w-9"
           >
             <Maximize2 className="h-4 w-4" />
+          </Button>
+          <Button
+            size="icon"
+            variant="secondary"
+            onClick={handleExportPng}
+            title="Exportar como PNG"
+            className={`h-9 w-9 transition-opacity duration-300 ${filteredPhilosopher || filteredStatement ? 'opacity-100' : 'opacity-30 pointer-events-none'}`}
+          >
+            <Download className="h-4 w-4" />
           </Button>
         </div>
 
