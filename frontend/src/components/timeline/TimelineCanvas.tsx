@@ -405,13 +405,25 @@ export function TimelineCanvas() {
   }, []);
 
   const handleResetZoom = useCallback(() => {
-    if (svgRef.current && zoomRef.current) {
-      const svg = d3.select(svgRef.current);
-      svg.transition().duration(500).call(
-        zoomRef.current.transform,
-        d3.zoomIdentity.translate(50, 50).scale(0.8)
-      );
-    }
+    if (!svgRef.current || !zoomRef.current || !containerRef.current) return;
+    const svg = d3.select(svgRef.current);
+    const g = svg.select('g');
+    const bbox = (g.node() as SVGGElement)?.getBBox();
+    if (!bbox || bbox.width === 0) return;
+    const svgW = containerRef.current.clientWidth;
+    const svgH = containerRef.current.clientHeight;
+    const padding = 80;
+    const scale = Math.min(
+      (svgW - padding * 2) / bbox.width,
+      (svgH - padding * 2) / bbox.height,
+      1
+    );
+    const tx = svgW / 2 - (bbox.x + bbox.width / 2) * scale;
+    const ty = svgH / 2 - (bbox.y + bbox.height / 2) * scale;
+    svg.transition().duration(600).call(
+      zoomRef.current.transform,
+      d3.zoomIdentity.translate(tx, ty).scale(scale)
+    );
   }, []);
 
   // Effect to handle hover and filter opacity changes

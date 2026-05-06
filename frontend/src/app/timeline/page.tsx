@@ -9,7 +9,7 @@ export const metadata = {
 
 export default function TimelinePage() {
   return (
-    <div className="h-screen flex flex-col bg-background">
+    <div className="flex flex-col bg-background overflow-hidden" style={{height: '100dvh', paddingTop: '64px'}}>
       {/* Header */}
       {/* <section className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container py-8">
