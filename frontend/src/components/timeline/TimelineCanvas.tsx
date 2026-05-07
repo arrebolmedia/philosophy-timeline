@@ -568,8 +568,7 @@ export function TimelineCanvas() {
     const padding = 80;
     const scale = Math.min(
       (svgW - padding * 2) / bbox.width,
-      (svgH - padding * 2) / bbox.height,
-      1
+      (svgH - padding * 2) / bbox.height
     );
     const tx = svgW / 2 - (bbox.x + bbox.width / 2) * scale;
     const ty = svgH / 2 - (bbox.y + bbox.height / 2) * scale;
@@ -582,10 +581,14 @@ export function TimelineCanvas() {
   }, []);
 
   const handleResetZoom = useCallback(() => {
-    pendingResetRef.current = true;
-    setFilteredPhilosopher(null);
-    setFilteredStatement(null);
-  }, []);
+    if (!filteredPhilosopher && !filteredStatement) {
+      requestAnimationFrame(() => requestAnimationFrame(() => doResetZoom()));
+    } else {
+      pendingResetRef.current = true;
+      setFilteredPhilosopher(null);
+      setFilteredStatement(null);
+    }
+  }, [filteredPhilosopher, filteredStatement, doResetZoom]);
 
   // Execute zoom reset after filters have been cleared and DOM has updated
   useEffect(() => {
