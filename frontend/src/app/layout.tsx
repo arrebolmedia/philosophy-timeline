@@ -6,6 +6,7 @@ import { QueryProvider } from '@/components/providers/query-provider'
 import { AuthProvider } from '@/components/providers/auth-provider'
 import { Toaster } from '@/components/ui/toaster'
 import { Navigation } from '@/components/layout/Navigation'
+import { Footer } from '@/components/layout/Footer'
 
 const inter = Inter({ 
   subsets: ['latin'],
@@ -107,6 +108,7 @@ export default function RootLayout({
                 <div className="flex-1">
                   {children}
                 </div>
+                <Footer />
               </div>
               <Toaster />
             </QueryProvider>

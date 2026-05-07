@@ -150,14 +150,16 @@ ssh root@64.23.231.86 "cd /var/www/timeline && git pull origin main && cd fronte
 | 4 | Filosofía del s. XX | 5 | Filosofía Contemporánea | 6 | Filosofía Medieval | 7 | Renacimiento |
 
 ### Estado actual de IDs (actualizar tras cada batch)
-- Filósofos: hasta **#98** (Isaiah Berlin)
-- Statements: hasta **#201** (Peirce "primera regla de la razón")
-- Connections: hasta **#238**
+- Filósofos: hasta **#103** (Séneca)
+- Statements: hasta **#225** (Plotino ascenso/unio mystica)
+- Connections: hasta **#292**
 
 ### Changelog de versiones
 
 | Versión | Fecha | Contenido |
 |---------|-------|-----------|
+| 1.4.1 | 2026-05-06 | UX: momentum drag/zoom, transiciones suaves al agrupar, fix conexiones extra, pointer-events, click-outside suave. |
+| 1.4.0 | 2026-05-06 | M4 Historia Filosofía Antigua completo: 5 filósofos, 24 stmts, 36 conexiones. |
 | 1.3.3 | 2026-05-06 | M3 completo: Hume (#94), Ricoeur (#95), Ortega (#96), Bernardo de Chartres (#97), Berlin (#98). 12 stmts, 22 conexiones. Legend colapsable. |
 | 1.3.2 | 2026-05-05 | M2 completo: Boole (#92), De Morgan (#93), Frege +2 stmts. 40 statements recortados ≤180 chars. 4 conexiones grises corregidas. |
 | 1.3.1 | — | M2T1-T7: Frege (#89), Porfirio (#90), Peirce (#91). Eje diagonal único en timeline. |

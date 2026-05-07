@@ -421,22 +421,30 @@ export function TimelineCanvas() {
       .style('font-size', '15px')
       .style('fill', '#111');
 
-    // Years on same line, positioned after each name using actual text width
+    // Years on same line — añadir primero con x=0, luego reposicionar con getBBox real
     philoItems.each(function(d: any) {
       const group = d3.select(this);
-      const nameText = group.select('.philo-name').node() as SVGTextElement;
-      const nameWidth = nameText?.getBBox().width || (d.name.length * 10);
-      
+      const birth = d.birthYear < 0 ? `${Math.abs(d.birthYear)} BCE` : `${d.birthYear}`;
+      const death = d.deathYear < 0 ? `${Math.abs(d.deathYear)} BCE` : `${d.deathYear}`;
       group.append('text')
-        .attr('x', nameWidth + 10) // 10px spacing after name
+        .attr('class', 'philo-years')
+        .attr('x', 0)
         .attr('y', 5)
-        .text(() => {
-          const birth = d.birthYear < 0 ? `${Math.abs(d.birthYear)} BCE` : `${d.birthYear}`;
-          const death = d.deathYear < 0 ? `${Math.abs(d.deathYear)} BCE` : `${d.deathYear}`;
-          return `${birth} – ${death}`;
-        })
+        .text(`${birth} – ${death}`)
         .style('font-size', '11px')
         .style('fill', '#888');
+    });
+
+    // Reposicionar fechas usando el ancho real del nombre (ya renderizado)
+    philoItems.each(function() {
+      const group = d3.select(this);
+      const nameEl = group.select<SVGTextElement>('.philo-name').node();
+      const yearsEl = group.select<SVGTextElement>('.philo-years').node();
+      if (!nameEl || !yearsEl) return;
+      try {
+        const nameWidth = nameEl.getBBox().width;
+        yearsEl.setAttribute('x', String(nameWidth + 10));
+      } catch { /* getBBox puede fallar fuera del DOM */ }
     });
 
     // statements
@@ -709,6 +717,18 @@ export function TimelineCanvas() {
     copyrightEl.style.fontFamily = 'system-ui, sans-serif';
     clone.appendChild(copyrightEl);
 
+    // URL — esquina inferior izquierda
+    const urlEl = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    urlEl.textContent = 'timeline.anthonycazares.cafe';
+    urlEl.setAttribute('x', String(vx + PADDING / 2));
+    urlEl.setAttribute('y', String(vy + vh - PADDING / 4));
+    urlEl.setAttribute('text-anchor', 'start');
+    urlEl.setAttribute('dominant-baseline', 'auto');
+    urlEl.style.fontSize = '11px';
+    urlEl.style.fill = '#9ca3af';
+    urlEl.style.fontFamily = 'system-ui, sans-serif';
+    clone.appendChild(urlEl);
+
     await Promise.all(
       Array.from(clone.querySelectorAll('image')).map(async (imgEl) => {
         const href = imgEl.getAttribute('href') || imgEl.getAttribute('xlink:href') || '';
@@ -764,6 +784,7 @@ export function TimelineCanvas() {
       URL.revokeObjectURL(svgUrl);
     }
   }, []);
+
 
   // Effect to handle hover and filter opacity changes
   useEffect(() => {
@@ -1183,12 +1204,21 @@ export function TimelineCanvas() {
             return `translate(${d.x}, ${d.y})`;
           });
 
-        // Negrita + tamaño en el filósofo clickeado
+        // Negrita + tamaño en el filósofo clickeado, recalculando posición de fechas
         svg.selectAll('.philo-name').style('font-weight', '700').style('font-size', '15px');
-        svg.selectAll<SVGGElement, any>('.philosopher-label')
-          .filter((d: any) => d.id === filteredPhilosopher)
-          .select('.philo-name')
-          .style('font-weight', '900').style('font-size', '17px');
+        svg.selectAll<SVGGElement, any>('.philosopher-label').each(function(d: any) {
+          const group = d3.select(this);
+          const isActive = d.id === filteredPhilosopher;
+          group.select('.philo-name')
+            .style('font-weight', isActive ? '900' : '700')
+            .style('font-size', isActive ? '17px' : '15px');
+          // Recalcular posición de fechas con el ancho real del nombre
+          const nameEl = group.select<SVGTextElement>('.philo-name').node();
+          const yearsEl = group.select<SVGTextElement>('.philo-years').node();
+          if (nameEl && yearsEl) {
+            try { yearsEl.setAttribute('x', String(nameEl.getBBox().width + 10)); } catch { /* skip */ }
+          }
+        });
 
         // Animate connections in sync with node movement
         const arcPath2 = (fx: number, fy: number, tx: number, ty: number, isRed: boolean) => {
@@ -1276,7 +1306,15 @@ export function TimelineCanvas() {
       }
       skipZoomOnClearRef.current = false;
 
-      svg.selectAll('.philo-name').style('font-weight', '700').style('font-size', '15px');
+      svg.selectAll<SVGGElement, any>('.philosopher-label').each(function() {
+        const group = d3.select(this);
+        group.select('.philo-name').style('font-weight', '700').style('font-size', '15px');
+        const nameEl = group.select<SVGTextElement>('.philo-name').node();
+        const yearsEl = group.select<SVGTextElement>('.philo-years').node();
+        if (nameEl && yearsEl) {
+          try { yearsEl.setAttribute('x', String(nameEl.getBBox().width + 10)); } catch { /* skip */ }
+        }
+      });
       svg.selectAll('.stmt-text').style('font-weight', null);
 
       svg.selectAll('.philosopher-label')
@@ -1488,7 +1526,7 @@ export function TimelineCanvas() {
         </div>
 
         <div ref={containerRef} className="w-full flex-1 bg-white overflow-hidden border-t">
-          <svg ref={svgRef} style={{ width: "100%", height: "100%" }} />
+          <svg ref={svgRef} style={{ width: '100%', height: '100%' }} />
         </div>
 
         {tooltip && (

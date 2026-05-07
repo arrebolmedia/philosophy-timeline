@@ -82,6 +82,19 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* About Anthony Section */}
+      <section className="py-24 border-t">
+        <div className="container mx-auto px-4 max-w-2xl">
+          <h2 className="text-2xl font-bold text-center mb-8 font-[family-name:var(--font-playfair)]">Sobre mí</h2>
+          <p className="text-base text-gray-500 leading-relaxed font-[family-name:var(--font-poppins)] text-justify" style={{textAlignLast: 'center'}}>
+            Soy Anthony Cazares, filósofo en formación y explorador ávido de la inteligencia artificial.
+            Este proyecto nace de un impulso sencillo: devolver algo de lo mucho que internet me ha dado.
+            El conocimiento gratuito e ilimitado que encontré en la red cambió mi forma de pensar;
+            quiero que este espacio sea una pequeña contribución a esa misma cadena.
+          </p>
+        </div>
+      </section>
+
       {/* How it works Section */}
       <section className="py-24 border-t">
         <div className="container mx-auto px-4 max-w-2xl">
@@ -102,28 +115,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="border-t py-8">
-        <div className="container mx-auto px-4 text-center text-sm text-gray-400 font-[family-name:var(--font-poppins)] space-y-2">
-          <p>
-            Inspirado en el trabajo de{' '}
-            <a
-              href="https://www.denizcemonduygu.com/portfolio/the-history-of-philosophy/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="underline underline-offset-4 hover:text-gray-600 transition-colors"
-            >
-              Deniz Cem Önduygu
-            </a>
-            .
-          </p>
-          <p>
-            <Link href="/logs" className="underline underline-offset-4 hover:text-gray-600 transition-colors">
-              Registro de cambios
-            </Link>
-          </p>
-        </div>
-      </footer>
     </div>
   )
 }

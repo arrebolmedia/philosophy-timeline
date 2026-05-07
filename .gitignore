@@ -86,3 +86,10 @@ backend/.swarm/
 # DB dumps
 prod_data.json
 prod_dump*.sql
+
+# Video export (WIP — no listo para producción)
+frontend/src/components/timeline/CinematicCamera.ts
+frontend/src/components/timeline/CameraSequence.ts
+frontend/src/components/timeline/CinematicRecorder.ts
+frontend/src/components/ui/RecordingModal.tsx
+.hive-mind/
