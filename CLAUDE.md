@@ -152,7 +152,7 @@ ssh root@64.23.231.86 "cd /var/www/timeline && git pull origin main && cd fronte
 ### Estado actual de IDs (actualizar tras cada batch)
 - Filósofos: hasta **#105** (Albert Camus)
 - Statements: hasta **#246** (Ockham — Dios no demostrable)
-- Connections: hasta **#323**
+- Connections: hasta **#356** (307 activas — 5 duplicados eliminados por auditoría lógica)
 
 ### Changelog de versiones
 

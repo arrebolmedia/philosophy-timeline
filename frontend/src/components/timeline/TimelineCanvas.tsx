@@ -1429,7 +1429,7 @@ export function TimelineCanvas() {
         {/* Info badge */}
         <div className="absolute top-4 left-4 z-10 bg-white/80 backdrop-blur px-3 py-1 rounded shadow-sm">
           <div className="text-xs text-gray-600 font-medium">
-            {data.philosophers?.length || 0} filósofos · {(data?.statements || []).length || 0} declaraciones
+            {data.philosophers?.length || 0} filósofos · {(data?.statements || []).length || 0} declaraciones · {(data?.connections || []).length || 0} conexiones
           </div>
         </div>
 
