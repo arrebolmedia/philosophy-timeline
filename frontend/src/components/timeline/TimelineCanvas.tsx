@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { APP_VERSION } from '@/version';
 import * as d3 from 'd3';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -42,6 +41,7 @@ export function TimelineCanvas() {
   const [filteredStatement, setFilteredStatement] = useState<number | null>(null);
   const [legendCollapsed, setLegendCollapsed] = useState(false);
   const [canvasKey, setCanvasKey] = useState(0);
+  const [appVersion, setAppVersion] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchTimelineData = async () => {
@@ -60,6 +60,19 @@ export function TimelineCanvas() {
     };
 
     fetchTimelineData();
+  }, []);
+
+  useEffect(() => {
+    fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/changelog`)
+      .then(r => r.json())
+      .then(r => {
+        const latest = r.data?.desarrollo?.[0];
+        if (latest) {
+          const match = latest.description.match(/v(\d+\.\d+\.\d+)/);
+          if (match) setAppVersion(match[1]);
+        }
+      })
+      .catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -1513,7 +1526,7 @@ export function TimelineCanvas() {
                       <span>scroll para zoom, mejor en Chrome desktop</span>
                     </div>
                     <div className="text-[10px] text-gray-400 pt-1">
-                      v{APP_VERSION} · {new Date().toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                      {appVersion ? `v${appVersion}` : ''} · {new Date().toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' })}
                     </div>
                   </div>
                 </>
