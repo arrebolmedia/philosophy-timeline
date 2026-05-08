@@ -150,14 +150,19 @@ ssh root@64.23.231.86 "cd /var/www/timeline && git pull origin main && cd fronte
 | 4 | Filosofía del s. XX | 5 | Filosofía Contemporánea | 6 | Filosofía Medieval | 7 | Renacimiento |
 
 ### Estado actual de IDs (actualizar tras cada batch)
-- Filósofos: hasta **#105** (Albert Camus)
-- Statements: hasta **#246** (Ockham — Dios no demostrable)
-- Connections: hasta **#356** (307 activas — 5 duplicados eliminados por auditoría lógica)
+- Filósofos: hasta **#132** (Richard Rorty)
+- Statements: hasta **#323** (Leibniz — vis viva)
+- Connections: hasta **#512** (M13 T1–T6 incluidos)
 
 ### Changelog de versiones
 
 | Versión | Fecha | Contenido |
 |---------|-------|-----------|
+| 1.4.7 | 2026-05-07 | M13 Metafísica en curso (T1–T6): Zubiri (#129), Julián Marías (#130), Habermas (#131), Rorty (#132). 20 stmts (#304–323), 51 conexiones (#462–512). |
+| 1.4.6 | 2026-05-07 | M12 Filosofía Política completo: Maquiavelo (#123), Hobbes (#124), Locke (#125), Montesquieu (#126), Thoreau (#127), Honneth (#128). 20 stmts, 12 conexiones. Fix: fusión Santo Tomás de Aquino (#118) con Tomás de Aquino (#44), 14 stmts consolidados. |
+| 1.4.5 | 2026-05-07 | M10 Patrística y Medieval completo: Tomás de Aquino (#118), Boecio (#119), Averroes (#120), Avicena (#121), Justino Mártir (#122). 11 stmts, 40 conexiones. |
+| 1.4.4 | 2026-05-07 | M9 Antropología Filosófica completo: Rousseau (#112), Maslow (#113), Merleau-Ponty (#114), Schopenhauer (#115), Unamuno (#116), Pascal (#117). 14 stmts, 36 conexiones. |
+| 1.4.3 | 2026-05-07 | M8 Estética completo: Freud (#106), Benjamin (#107), Han (#108), Danto (#109), Baumgarten (#110), Ficino (#111). 12 stmts, 17 conexiones. |
 | 1.4.2 | 2026-05-07 | M7 Filosofía de la Naturaleza completo: Frankl (#104), Camus (#105). 21 stmts, 31 conexiones. |
 | 1.4.1 | 2026-05-06 | UX: momentum drag/zoom, transiciones suaves al agrupar, fix conexiones extra, pointer-events, click-outside suave. |
 | 1.4.0 | 2026-05-06 | M4 Historia Filosofía Antigua completo: 5 filósofos, 24 stmts, 36 conexiones. |
