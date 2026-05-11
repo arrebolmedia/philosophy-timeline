@@ -154,27 +154,27 @@ ssh root@64.23.231.86 "cd /var/www/timeline && git pull origin main && cd fronte
 - Statements: hasta **#357** (Eco — muerte espectáculo)
 - Connections: hasta **#585** (M15 completo)
 
-### Changelog de versiones
+### Changelog de versiones (solo software/UI/UX)
 
-| Versión | Fecha | Contenido |
-|---------|-------|-----------|
-| 1.4.11 | 2026-05-13 | Publicación de M15 Antropología Filosófica II: 9 filósofos nuevos, 20 proposiciones, 42 conexiones. |
-| 1.4.10 | 2026-05-11 | Publicación de M14 — segunda pasada: 1 filósofo nuevo, 5 proposiciones, 10 conexiones. |
-| 1.4.9 | 2026-05-11 | Publicación de M14 Ética General — primera pasada: 4 proposiciones, 6 conexiones. |
-| 1.4.8 | 2026-05-08 | M13 Metafísica completo (T10–T11): Malebranche (#133). 7 stmts (#324–328 + T11), 23 conexiones (#513–527). |
-| 1.4.7 | 2026-05-07 | M13 Metafísica en curso (T1–T6): Zubiri (#129), Julián Marías (#130), Habermas (#131), Rorty (#132). 20 stmts (#304–323), 51 conexiones (#462–512). |
-| 1.4.6 | 2026-05-07 | M12 Filosofía Política completo: Maquiavelo (#123), Hobbes (#124), Locke (#125), Montesquieu (#126), Thoreau (#127), Honneth (#128). 20 stmts, 12 conexiones. Fix: fusión Santo Tomás de Aquino (#118) con Tomás de Aquino (#44), 14 stmts consolidados. |
-| 1.4.5 | 2026-05-07 | M10 Patrística y Medieval completo: Tomás de Aquino (#118), Boecio (#119), Averroes (#120), Avicena (#121), Justino Mártir (#122). 11 stmts, 40 conexiones. |
-| 1.4.4 | 2026-05-07 | M9 Antropología Filosófica completo: Rousseau (#112), Maslow (#113), Merleau-Ponty (#114), Schopenhauer (#115), Unamuno (#116), Pascal (#117). 14 stmts, 36 conexiones. |
-| 1.4.3 | 2026-05-07 | M8 Estética completo: Freud (#106), Benjamin (#107), Han (#108), Danto (#109), Baumgarten (#110), Ficino (#111). 12 stmts, 17 conexiones. |
-| 1.4.2 | 2026-05-07 | M7 Filosofía de la Naturaleza completo: Frankl (#104), Camus (#105). 21 stmts, 31 conexiones. |
-| 1.4.1 | 2026-05-06 | UX: momentum drag/zoom, transiciones suaves al agrupar, fix conexiones extra, pointer-events, click-outside suave. |
-| 1.4.0 | 2026-05-06 | M4 Historia Filosofía Antigua completo: 5 filósofos, 24 stmts, 36 conexiones. |
-| 1.3.3 | 2026-05-06 | M3 completo: Hume (#94), Ricoeur (#95), Ortega (#96), Bernardo de Chartres (#97), Berlin (#98). 12 stmts, 22 conexiones. Legend colapsable. |
-| 1.3.2 | 2026-05-05 | M2 completo: Boole (#92), De Morgan (#93), Frege +2 stmts. 40 statements recortados ≤180 chars. 4 conexiones grises corregidas. |
-| 1.3.1 | — | M2T1-T7: Frege (#89), Porfirio (#90), Peirce (#91). Eje diagonal único en timeline. |
-| 1.3.0 | — | Eje diagonal único — filósofos y statements sobre una sola línea. |
-| 1.2.0 | — | Batch M1T3: Hegel, Husserl, Wittgenstein, Gadamer. |
+**Regla:** Las versiones reflejan SOLO cambios de software (UI, UX, features, fixes). Las publicaciones de contenido filosófico se registran automáticamente en la categoría `proposiciones` vía triggers y NO bumpean versión.
+
+| Versión | Fecha | Cambio |
+|---------|-------|--------|
+| 1.3.4 | 2026-05-07 | Fix: botón de reset zoom funciona sin filtro activo. |
+| 1.3.3 | 2026-05-07 | Badge de conexiones en el timeline. |
+| 1.3.2 | 2026-05-07 | Footer global, páginas /legal y /privacidad, sección Sobre mí. Fix: fechas de filósofo. |
+| 1.3.1 | 2026-05-06 | UX: momentum drag/zoom, transiciones suaves al agrupar, fix conexiones extra, pointer-events, click-outside suave. |
+| 1.3.0 | 2026-05-06 | Logs paginados de 10 en 10 + header fijo + spacing compacto. |
+| 1.2.2 | 2026-05-05 | Registro de cambios automático mediante triggers PostgreSQL. |
+| 1.2.1 | 2026-05-05 | Página de inicio rediseñada: hero con typing animation. |
+| 1.2.0 | 2026-05-03 | Rediseño layout: eje diagonal único, filósofos y proposiciones sobre una sola línea. |
+| 1.1.5 | 2026-04-28 | Fix race condition al hacer clic rápido. |
+| 1.1.4 | 2026-04-25 | Hover reactivo muestra conexiones relacionadas. |
+| 1.1.3 | 2026-04-22 | Compactación sin huecos al filtrar. |
+| 1.1.2 | 2026-04-20 | Semicírculos SVG 180° (verdes acuerdo, rojos desacuerdo). |
+| 1.1.1 | 2026-04-15 | Trigger batch changelog agrupa inserts del mismo módulo. |
+| 1.1.0 | 2026-02-10 | NextAuth para panel de administración. |
+| 1.0.0 | 2025-10-22 | Lanzamiento inicial — timeline con presocráticos. |
 
 ---
 
