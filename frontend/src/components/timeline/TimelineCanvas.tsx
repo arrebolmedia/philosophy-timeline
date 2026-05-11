@@ -825,14 +825,22 @@ export function TimelineCanvas() {
     const svgString = new XMLSerializer().serializeToString(clone);
     const svgUrl    = URL.createObjectURL(new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' }));
 
-    // Build a meaningful filename based on the active filter
+    // Build a meaningful filename based on the active filter.
+    // Note: API shape is philosophers[i].philosopher = { id, name, ... }
+    const getPhilosopherById = (id: number): { name?: string } | null => {
+      const wrapper = (data?.philosophers as any[] | undefined)?.find(
+        (p: any) => p?.philosopher?.id === id || p?.id === id
+      );
+      return wrapper?.philosopher ?? wrapper ?? null;
+    };
+
     let filename = 'timeline-filosofia';
     if (filteredPhilosopher !== null && data) {
-      const philo = data.philosophers?.find((p: any) => p.id === filteredPhilosopher);
+      const philo = getPhilosopherById(filteredPhilosopher);
       if (philo?.name) filename = `filosofo-${slugify(philo.name)}`;
     } else if (filteredStatement !== null && data) {
       const stmt = (data.statements as StatementNode[] | undefined)?.find(s => s.id === filteredStatement);
-      const philo = stmt ? data.philosophers?.find((p: any) => p.id === stmt.philosopherId) : null;
+      const philo = stmt ? getPhilosopherById(stmt.philosopherId) : null;
       if (philo?.name) {
         filename = `proposicion-${slugify(philo.name)}-${filteredStatement}`;
       } else {
