@@ -150,15 +150,16 @@ ssh root@64.23.231.86 "cd /var/www/timeline && git pull origin main && cd fronte
 | 4 | Filosofía del s. XX | 5 | Filosofía Contemporánea | 6 | Filosofía Medieval | 7 | Renacimiento |
 
 ### Estado actual de IDs (actualizar tras cada batch)
-- Filósofos: hasta **#133** (Nicolas Malebranche)
-- Statements: hasta **#332** (Epicuro — discernimiento)
-- Connections: hasta **#533** (M14 completo)
+- Filósofos: hasta **#134** (Marco Aurelio)
+- Statements: hasta **#337** (Agustín — teodicea)
+- Connections: hasta **#543** (M14 completo, 2 pasadas)
 
 ### Changelog de versiones
 
 | Versión | Fecha | Contenido |
 |---------|-------|-----------|
-| 1.4.9 | 2026-05-11 | M14 Ética General completo: Sartre, Hume, Scheler, Epicuro — libertad radical, falacia ser/deber, valores apriorísticos, virtud hedonista. 4 stmts (#329–332), 6 conexiones (#528–533). |
+| 1.4.10 | 2026-05-11 | Publicación de M14 — segunda pasada: 1 filósofo nuevo, 5 proposiciones, 10 conexiones. |
+| 1.4.9 | 2026-05-11 | Publicación de M14 Ética General — primera pasada: 4 proposiciones, 6 conexiones. |
 | 1.4.8 | 2026-05-08 | M13 Metafísica completo (T10–T11): Malebranche (#133). 7 stmts (#324–328 + T11), 23 conexiones (#513–527). |
 | 1.4.7 | 2026-05-07 | M13 Metafísica en curso (T1–T6): Zubiri (#129), Julián Marías (#130), Habermas (#131), Rorty (#132). 20 stmts (#304–323), 51 conexiones (#462–512). |
 | 1.4.6 | 2026-05-07 | M12 Filosofía Política completo: Maquiavelo (#123), Hobbes (#124), Locke (#125), Montesquieu (#126), Thoreau (#127), Honneth (#128). 20 stmts, 12 conexiones. Fix: fusión Santo Tomás de Aquino (#118) con Tomás de Aquino (#44), 14 stmts consolidados. |
