@@ -150,14 +150,15 @@ ssh root@64.23.231.86 "cd /var/www/timeline && git pull origin main && cd fronte
 | 4 | Filosofía del s. XX | 5 | Filosofía Contemporánea | 6 | Filosofía Medieval | 7 | Renacimiento |
 
 ### Estado actual de IDs (actualizar tras cada batch)
-- Filósofos: hasta **#134** (Marco Aurelio)
-- Statements: hasta **#337** (Agustín — teodicea)
-- Connections: hasta **#543** (M14 completo, 2 pasadas)
+- Filósofos: hasta **#143** (Umberto Eco)
+- Statements: hasta **#357** (Eco — muerte espectáculo)
+- Connections: hasta **#585** (M15 completo)
 
 ### Changelog de versiones
 
 | Versión | Fecha | Contenido |
 |---------|-------|-----------|
+| 1.4.11 | 2026-05-13 | Publicación de M15 Antropología Filosófica II: 9 filósofos nuevos, 20 proposiciones, 42 conexiones. |
 | 1.4.10 | 2026-05-11 | Publicación de M14 — segunda pasada: 1 filósofo nuevo, 5 proposiciones, 10 conexiones. |
 | 1.4.9 | 2026-05-11 | Publicación de M14 Ética General — primera pasada: 4 proposiciones, 6 conexiones. |
 | 1.4.8 | 2026-05-08 | M13 Metafísica completo (T10–T11): Malebranche (#133). 7 stmts (#324–328 + T11), 23 conexiones (#513–527). |
