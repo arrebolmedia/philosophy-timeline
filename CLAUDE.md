@@ -160,6 +160,7 @@ ssh root@64.23.231.86 "cd /var/www/timeline && git pull origin main && cd fronte
 
 | Versión | Fecha | Cambio |
 |---------|-------|--------|
+| 1.5.0 | 2026-05-13 | Open Graph dinámico por filtro: `generateMetadata` lee `?philosopher` / `?statement` y publica título, descripción y `og:image` específicos. Imagen OG (1200×630) se renderiza on-demand desde `/api/og` con `ImageResponse` (edge runtime). |
 | 1.4.2 | 2026-05-13 | Fix: el nombre dinámico del PNG no incluía el filósofo al exportar una proposición, porque el lookup ignoraba el wrapper `philosophers[i].philosopher` del shape del API. |
 | 1.4.1 | 2026-05-13 | Notificaciones toast (sonner) para Compartir y Exportar PNG. Nombre dinámico del PNG según filtro activo (`filosofo-{slug}.png` o `proposicion-{slug}-{id}.png`). |
 | 1.4.0 | 2026-05-13 | URLs compartibles: los filtros del timeline se sincronizan con query params (`?philosopher=X` / `?statement=Y`) y se pueden copiar al portapapeles desde un botón Share. |
