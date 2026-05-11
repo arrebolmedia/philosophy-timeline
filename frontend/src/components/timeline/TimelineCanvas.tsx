@@ -3,9 +3,10 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import * as d3 from 'd3';
+import { toast } from 'sonner';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import { Info, ZoomIn, ZoomOut, Maximize2, ChevronDown, Download, Share2, Check } from 'lucide-react';
+import { Info, ZoomIn, ZoomOut, Maximize2, ChevronDown, Download, Share2 } from 'lucide-react';
 import type { TimelineData, StatementNode, ConnectionLink, PhilosopherNode } from '@/types/timeline';
 
 const CONNECTION_COLORS = {
@@ -18,6 +19,18 @@ function colorFor(type: string): string {
   if (['agreement','expansion','inspiration','influence','resonate'].includes(type)) return CONNECTION_COLORS.resonate;
   if (['disagreement','refutation','oppose'].includes(type)) return CONNECTION_COLORS.oppose;
   return CONNECTION_COLORS.default;
+}
+
+function slugify(input: string): string {
+  return input
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
+    .replace(/[^a-z0-9\s-]/g, '')
+    .trim()
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .slice(0, 80);
 }
 
 export function TimelineCanvas() {
@@ -53,7 +66,6 @@ export function TimelineCanvas() {
   const [legendCollapsed, setLegendCollapsed] = useState(false);
   const [canvasKey, setCanvasKey] = useState(0);
   const [appVersion, setAppVersion] = useState<string | null>(null);
-  const [shareCopied, setShareCopied] = useState(false);
 
   // Sync filter state to URL query params
   useEffect(() => {
@@ -68,12 +80,19 @@ export function TimelineCanvas() {
   const copyShareLink = useCallback(() => {
     if (typeof window === 'undefined') return;
     const url = window.location.href;
-    if (navigator.clipboard?.writeText) {
-      navigator.clipboard.writeText(url).then(() => {
-        setShareCopied(true);
-        setTimeout(() => setShareCopied(false), 2000);
-      }).catch(() => {});
+    if (!navigator.clipboard?.writeText) {
+      toast.error('Tu navegador no permite copiar al portapapeles.');
+      return;
     }
+    navigator.clipboard.writeText(url)
+      .then(() => {
+        toast.success('Enlace copiado al portapapeles', {
+          description: 'Compártelo para mostrar esta vista del timeline.',
+        });
+      })
+      .catch(() => {
+        toast.error('No se pudo copiar el enlace.');
+      });
   }, []);
 
   useEffect(() => {
@@ -690,7 +709,10 @@ export function TimelineCanvas() {
         } catch { /* getBBox puede fallar en nodos ocultos */ }
       });
 
-      if (!found) { alert('No hay elementos visibles para exportar.'); return; }
+      if (!found) {
+        toast.error('No hay elementos visibles para exportar.');
+        return;
+      }
       bbox = { x: minX, y: minY, width: maxX - minX, height: maxY - minY };
     } else {
       // Full timeline — iterate all nodes (same method, no opacity filter)
@@ -803,6 +825,21 @@ export function TimelineCanvas() {
     const svgString = new XMLSerializer().serializeToString(clone);
     const svgUrl    = URL.createObjectURL(new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' }));
 
+    // Build a meaningful filename based on the active filter
+    let filename = 'timeline-filosofia';
+    if (filteredPhilosopher !== null && data) {
+      const philo = data.philosophers?.find((p: any) => p.id === filteredPhilosopher);
+      if (philo?.name) filename = `filosofo-${slugify(philo.name)}`;
+    } else if (filteredStatement !== null && data) {
+      const stmt = (data.statements as StatementNode[] | undefined)?.find(s => s.id === filteredStatement);
+      const philo = stmt ? data.philosophers?.find((p: any) => p.id === stmt.philosopherId) : null;
+      if (philo?.name) {
+        filename = `proposicion-${slugify(philo.name)}-${filteredStatement}`;
+      } else {
+        filename = `proposicion-${filteredStatement}`;
+      }
+    }
+
     try {
       await new Promise<void>((resolve, reject) => {
         const img = new Image();
@@ -817,7 +854,7 @@ export function TimelineCanvas() {
           ctx.drawImage(img, 0, 0, outW, outH);
           try {
             const link = document.createElement('a');
-            link.download = 'filosofia-timeline.png';
+            link.download = `${filename}.png`;
             link.href = canvas.toDataURL('image/png');
             link.click();
             resolve();
@@ -826,13 +863,16 @@ export function TimelineCanvas() {
         img.onerror = reject;
         img.src = svgUrl;
       });
+      toast.success('Imagen exportada', {
+        description: `${filename}.png se descargó a tu equipo.`,
+      });
     } catch (err) {
       console.error('Export PNG failed:', err);
-      alert('No se pudo exportar la imagen.');
+      toast.error('No se pudo exportar la imagen.');
     } finally {
       URL.revokeObjectURL(svgUrl);
     }
-  }, []);
+  }, [filteredPhilosopher, filteredStatement, data]);
 
 
   // Effect to handle hover and filter opacity changes
@@ -1524,10 +1564,10 @@ export function TimelineCanvas() {
             size="icon"
             variant="secondary"
             onClick={copyShareLink}
-            title={shareCopied ? '¡Enlace copiado!' : 'Compartir vista actual'}
+            title="Compartir vista actual"
             className={`h-9 w-9 transition-opacity duration-300 ${filteredPhilosopher || filteredStatement ? 'opacity-100' : 'opacity-30 pointer-events-none'}`}
           >
-            {shareCopied ? <Check className="h-4 w-4 text-green-600" /> : <Share2 className="h-4 w-4" />}
+            <Share2 className="h-4 w-4" />
           </Button>
         </div>
 

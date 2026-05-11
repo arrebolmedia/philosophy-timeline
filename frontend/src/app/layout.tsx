@@ -4,7 +4,7 @@ import { Inter, Crimson_Text, Playfair_Display, Poppins } from 'next/font/google
 import { ThemeProvider } from '@/components/providers/theme-provider'
 import { QueryProvider } from '@/components/providers/query-provider'
 import { AuthProvider } from '@/components/providers/auth-provider'
-import { Toaster } from '@/components/ui/toaster'
+import { Toaster } from 'sonner'
 import { Navigation } from '@/components/layout/Navigation'
 import { Footer } from '@/components/layout/Footer'
 
@@ -110,7 +110,7 @@ export default function RootLayout({
                 </div>
                 <Footer />
               </div>
-              <Toaster />
+              <Toaster position="bottom-right" richColors closeButton />
             </QueryProvider>
           </ThemeProvider>
         </AuthProvider>
