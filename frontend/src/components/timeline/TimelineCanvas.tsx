@@ -1,10 +1,11 @@
 'use client';
 
 import { useEffect, useRef, useState, useCallback } from 'react';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import * as d3 from 'd3';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import { Info, ZoomIn, ZoomOut, Maximize2, ChevronDown, Download } from 'lucide-react';
+import { Info, ZoomIn, ZoomOut, Maximize2, ChevronDown, Download, Share2, Check } from 'lucide-react';
 import type { TimelineData, StatementNode, ConnectionLink, PhilosopherNode } from '@/types/timeline';
 
 const CONNECTION_COLORS = {
@@ -20,6 +21,10 @@ function colorFor(type: string): string {
 }
 
 export function TimelineCanvas() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
   const containerRef = useRef<HTMLDivElement | null>(null);
   const svgRef = useRef<SVGSVGElement | null>(null);
   const zoomRef = useRef<any>(null);
@@ -37,11 +42,39 @@ export function TimelineCanvas() {
   const [highlightId, setHighlightId] = useState<number | null>(null);
   const [hoveredPhilosopher, setHoveredPhilosopher] = useState<number | null>(null);
   const [hoveredStatement, setHoveredStatement] = useState<number | null>(null);
-  const [filteredPhilosopher, setFilteredPhilosopher] = useState<number | null>(null);
-  const [filteredStatement, setFilteredStatement] = useState<number | null>(null);
+  const [filteredPhilosopher, setFilteredPhilosopher] = useState<number | null>(() => {
+    const p = searchParams.get('philosopher');
+    return p ? parseInt(p, 10) : null;
+  });
+  const [filteredStatement, setFilteredStatement] = useState<number | null>(() => {
+    const s = searchParams.get('statement');
+    return s ? parseInt(s, 10) : null;
+  });
   const [legendCollapsed, setLegendCollapsed] = useState(false);
   const [canvasKey, setCanvasKey] = useState(0);
   const [appVersion, setAppVersion] = useState<string | null>(null);
+  const [shareCopied, setShareCopied] = useState(false);
+
+  // Sync filter state to URL query params
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (filteredPhilosopher !== null) params.set('philosopher', String(filteredPhilosopher));
+    else if (filteredStatement !== null) params.set('statement', String(filteredStatement));
+    const queryString = params.toString();
+    const newUrl = queryString ? `${pathname}?${queryString}` : pathname;
+    router.replace(newUrl, { scroll: false });
+  }, [filteredPhilosopher, filteredStatement, pathname, router]);
+
+  const copyShareLink = useCallback(() => {
+    if (typeof window === 'undefined') return;
+    const url = window.location.href;
+    if (navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(url).then(() => {
+        setShareCopied(true);
+        setTimeout(() => setShareCopied(false), 2000);
+      }).catch(() => {});
+    }
+  }, []);
 
   useEffect(() => {
     const fetchTimelineData = async () => {
@@ -1486,6 +1519,15 @@ export function TimelineCanvas() {
             className={`h-9 w-9 transition-opacity duration-300 ${filteredPhilosopher || filteredStatement ? 'opacity-100' : 'opacity-30 pointer-events-none'}`}
           >
             <Download className="h-4 w-4" />
+          </Button>
+          <Button
+            size="icon"
+            variant="secondary"
+            onClick={copyShareLink}
+            title={shareCopied ? '¡Enlace copiado!' : 'Compartir vista actual'}
+            className={`h-9 w-9 transition-opacity duration-300 ${filteredPhilosopher || filteredStatement ? 'opacity-100' : 'opacity-30 pointer-events-none'}`}
+          >
+            {shareCopied ? <Check className="h-4 w-4 text-green-600" /> : <Share2 className="h-4 w-4" />}
           </Button>
         </div>
 

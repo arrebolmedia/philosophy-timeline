@@ -160,6 +160,7 @@ ssh root@64.23.231.86 "cd /var/www/timeline && git pull origin main && cd fronte
 
 | Versión | Fecha | Cambio |
 |---------|-------|--------|
+| 1.4.0 | 2026-05-13 | URLs compartibles: los filtros del timeline se sincronizan con query params (`?philosopher=X` / `?statement=Y`) y se pueden copiar al portapapeles desde un botón Share. |
 | 1.3.4 | 2026-05-07 | Fix: botón de reset zoom funciona sin filtro activo. |
 | 1.3.3 | 2026-05-07 | Badge de conexiones en el timeline. |
 | 1.3.2 | 2026-05-07 | Footer global, páginas /legal y /privacidad, sección Sobre mí. Fix: fechas de filósofo. |
