@@ -42,7 +42,7 @@ export async function GET(req: NextRequest) {
   const philosopherId = searchParams.get('philosopher') ? parseInt(searchParams.get('philosopher')!, 10) : null;
   const statementId = searchParams.get('statement') ? parseInt(searchParams.get('statement')!, 10) : null;
 
-  let kicker = 'Historia de la Filosofía';
+  let kicker: string | null = 'Historia de la Filosofía';
   let headline = 'Timeline interactivo';
   let body: string | null = 'Conexiones entre ideas filosóficas a través del tiempo.';
   const footer = 'timeline.anthonycazares.cafe';
@@ -52,15 +52,17 @@ export async function GET(req: NextRequest) {
     if (philosopherId !== null) {
       const philo = findPhilosopher(data, philosopherId);
       if (philo) {
-        kicker = 'Filósofo';
-        headline = philo.name || 'Filósofo';
+        kicker = null;
+        headline = philo.name || '';
         const birth = philo.birthYear;
         const death = philo.deathYear;
-        const dates =
+        const fmt = (y: number) => (y < 0 ? `${Math.abs(y)} a.C.` : `${y}`);
+        body =
           birth != null && death != null
-            ? `${birth < 0 ? `${Math.abs(birth)} a.C.` : birth} — ${death < 0 ? `${Math.abs(death)} a.C.` : death}`
-            : null;
-        body = [dates, philo.nationality].filter(Boolean).join(' · ') || philo.bioShort?.slice(0, 220) || null;
+            ? `${fmt(birth)} — ${fmt(death)}`
+            : birth != null
+              ? `${fmt(birth)} —`
+              : null;
       }
     } else if (statementId !== null) {
       const found = findStatement(data, statementId);
@@ -91,17 +93,21 @@ export async function GET(req: NextRequest) {
           fontFamily: 'serif',
         }}
       >
-        <div
-          style={{
-            fontSize: 28,
-            letterSpacing: '0.08em',
-            textTransform: 'uppercase',
-            color: '#86efac',
-            display: 'flex',
-          }}
-        >
-          {kicker}
-        </div>
+        {kicker ? (
+          <div
+            style={{
+              fontSize: 28,
+              letterSpacing: '0.08em',
+              textTransform: 'uppercase',
+              color: '#86efac',
+              display: 'flex',
+            }}
+          >
+            {kicker}
+          </div>
+        ) : (
+          <div style={{ display: 'flex' }} />
+        )}
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 32, maxWidth: 1040 }}>
           <div
@@ -139,10 +145,7 @@ export async function GET(req: NextRequest) {
             paddingTop: 24,
           }}
         >
-          <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
-            <span style={{ fontSize: 28 }}>📖</span>
-            <span>Historia de la Filosofía</span>
-          </div>
+          <div style={{ display: 'flex' }}>Historia de la Filosofía</div>
           <div style={{ display: 'flex' }}>{footer}</div>
         </div>
       </div>
