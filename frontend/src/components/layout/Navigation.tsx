@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname, useSearchParams } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { BookOpen, Users, Map, Search } from 'lucide-react';
 import { useState, useEffect } from 'react';
@@ -15,9 +15,8 @@ const navigation = [
 
 export function Navigation() {
   const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const meditationMode = searchParams?.get('meditation') === '1';
   const [isScrolled, setIsScrolled] = useState(false);
+  const [meditationMode, setMeditationMode] = useState(false);
 
   // Check if we're on an admin page
   const isAdminPage = pathname?.startsWith('/admin');
@@ -26,9 +25,26 @@ export function Navigation() {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 50);
     };
-
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // Read meditation mode from URL on mount and whenever the URL changes
+  useEffect(() => {
+    const read = () => {
+      if (typeof window === 'undefined') return;
+      const sp = new URLSearchParams(window.location.search);
+      setMeditationMode(sp.get('meditation') === '1');
+    };
+    read();
+    const onPop = () => read();
+    window.addEventListener('popstate', onPop);
+    // Poll lightly because Next.js router.replace doesn't fire popstate
+    const interval = window.setInterval(read, 200);
+    return () => {
+      window.removeEventListener('popstate', onPop);
+      window.clearInterval(interval);
+    };
   }, []);
 
   // Hide navigation on all admin pages
