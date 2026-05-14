@@ -1,110 +1,83 @@
 # Timeline — Historia de la Filosofía
 
-## Proyecto
-
-Timeline interactivo de la historia de la filosofía. Next.js frontend + Node backend + PostgreSQL.
-Ver `deploy.md` para infraestructura, IDs, comandos de DB y deploy.
+Timeline interactivo de la historia de la filosofía. Next.js + Node + PostgreSQL.
+Infra en Docker + Traefik en `data.arrebolweddings.com` (8GB).
 
 ---
 
-## Proceso consolidado: extracción de PDFs → DB
+## Estado actual
 
-Este es el workflow estándar para procesar cada tema (M1T1, M1T2, …):
+| Tabla | Último ID |
+|-------|-----------|
+| philosophers | #175 (Foucault) |
+| statements | #421 |
+| connections | #765 |
+| tags | #79 |
 
-### Estructura de carpetas y archivos
+**Módulos:** M1–M21 procesados. Próximo M22.
+**Versión:** 2.0.2
 
-- Base: `C:\Users\Marketing\OneDrive\Desktop\Licenciatura en Filosofía\`
-- Carpeta: `M{N}. {Nombre del módulo}` (ej. `M3. Principios y Técnicas de la Investigación Filosófica`)
-- Archivo: `M{N}T{T}. {Nombre del tema}.pdf` (ej. `M3T1. Valor de la investigación.pdf`)
+---
 
-### 1. Extracción de PDF (pdf-parse — sin API)
+## Conexiones a DB
+
+```bash
+# Local (Docker)
+docker exec -i timeline-db-1 psql -U filosofia -d historia_filosofia
+
+# Producción (Arrebol droplet)
+ssh root@data.arrebolweddings.com "docker exec -i timeline-db psql -U filosofia -d filosofia"
+```
+
+⚠️ **Nombres distintos:** local es `historia_filosofia`, prod es `filosofia`.
+
+---
+
+## Workflow PDF → DB (por tema)
+
+### 1. Extraer PDF
+Base: `C:\Users\Marketing\OneDrive\Desktop\Licenciatura en Filosofía\M{N}. {Módulo}\M{N}T{T}. {Tema}.pdf`
 
 ```powershell
 node -e "
 const fs = require('fs');
 const pdfParse = require('C:/Projects/digest/node_modules/pdf-parse');
-const buf = fs.readFileSync('ruta\\al\\archivo.pdf');
-pdfParse(buf).then(d => fs.writeFileSync('C:/tmp/m{N}/m{N}t{T}.txt', d.text));
+pdfParse(fs.readFileSync('ruta.pdf')).then(d => fs.writeFileSync('C:/tmp/m{N}/m{N}t{T}.txt', d.text));
 "
 ```
+Hasta 4 PDFs en paralelo con `run_in_background: true`. **No usar Vision API** — pdf-parse es gratis e instantáneo.
 
-Lanzar en paralelo hasta 4 PDFs con `run_in_background: true`. Esperar notificación — no hacer polling.
-**No usar Vision API** — pdf-parse extrae texto nativo, es gratis e instantáneo.
-
-### 2. Análisis del contenido
-
-Por cada tema extraído, identificar:
-- **Filósofos nuevos** (no están en DB) — necesitan INSERT en `philosophers`
-- **Filósofos existentes** con ángulo nuevo — solo INSERT en `statements`
-- **Statements redundantes** — verificar siempre con `SELECT` antes de proponer
-
-**Umbral de relevancia:** Entra si hay cita textual o paráfrasis con contenido filosófico propio del autor. No requiere que sea el tema central del PDF — basta con que aporte una idea argumentada, no solo una mención de pasada.
-
-**Filósofos de peso faltantes** (ej. Hume, Locke, Avicena): agregar si el PDF ofrece un statement válido. Si solo los menciona de pasada, esperar a su módulo propio.
-
-```powershell
-# Verificar si existe filósofo
-docker exec -i timeline-db-1 psql -U filosofia -d historia_filosofia -c "SELECT id, name FROM philosophers WHERE name ILIKE '%nombre%';"
-
-# Ver statements existentes de un filósofo
-docker exec -i timeline-db-1 psql -U filosofia -d historia_filosofia -c "SELECT s.id, s.text FROM statements s WHERE philosopher_id = <id>;"
-```
+### 2. Análisis
+- Filósofos nuevos → INSERT en `philosophers`
+- Existentes con ángulo nuevo → solo `statements`
+- **Siempre** `SELECT` por `philosopher_id` antes de proponer (evita duplicados)
+- **Umbral:** cita textual o paráfrasis con contenido propio del autor (no menciones de pasada)
 
 ### 3. Revisión con usuario
+Tabla por tema, esperar aprobación explícita antes de insertar.
 
-Presentar por tema: 2-3 líneas de contexto del tema → luego tabla:
+**Statements:** ~160 chars, sin guiones largos (—), sin redundancia.
+- `difficulty_level`: 1–5
+- `category_id`: ver "Taxonomía"
 
-| Filósofo | Statement | Dificultad | Categoría | Conexiones propuestas |
-|----------|-----------|------------|-----------|----------------------|
+**Conexiones:**
+- Solo entre filósofos distintos (trigger `trg_no_same_philosopher`)
+- `connection_type`: `resonate` o `oppose`
+- `strength` y `confidence`: 1–5
+- Explicación de 1–2 frases
 
-Claude propone `difficulty_level` y `category_id` con justificación breve. Usuario confirma o ajusta antes de insertar.
-No insertar nada hasta recibir aprobación explícita.
+### 4. Sync a producción
 
-**Reglas de statements:**
-- ~160 caracteres (una idea clara y completa)
-- Sin redundancia con statements existentes del mismo filósofo
-- Si hay duda entre dos formulaciones similares: proponer síntesis
-- `difficulty_level`: 1=muy accesible, 2=accesible, 3=moderado, 4=complejo, 5=muy denso
-- `category_id`: 1=Ética, 2=Metafísica, 3=Epistemología
-
-**Reglas de conexiones:**
-- Solo entre statements de filósofos **distintos** (trigger `trg_no_same_philosopher` lo bloquea)
-- `connection_type`: `resonate` (coinciden) o `oppose` (se refutan)
-- `strength` y `confidence`: 1-5
-- Explicación: 1-2 frases que justifiquen la relación
-
-### 4. Inserción local
-
-```powershell
-# Filósofos nuevos
-docker exec -i timeline-db-1 psql -U filosofia -d historia_filosofia -c "
-INSERT INTO philosophers (name, slug, birth_year, death_year, nationality, school_id, period_id, bio_short, updated_at)
-VALUES (...) RETURNING id, name;"
-
-# Statements
-docker exec -i timeline-db-1 psql -U filosofia -d historia_filosofia -c "
-INSERT INTO statements (philosopher_id, text, category_id, is_direct_quote, difficulty_level, updated_at)
-VALUES (...) RETURNING id, philosopher_id, left(text, 65) AS preview;"
-
-# Connections
-docker exec -i timeline-db-1 psql -U filosofia -d historia_filosofia -c "
-INSERT INTO connections (statement_from_id, statement_to_id, connection_type, strength, confidence, is_bidirectional, explanation)
-VALUES (...) RETURNING id, statement_from_id, statement_to_id, connection_type;"
-```
-
-### 5. Sincronización a producción
-
-**IMPORTANTE:** No usar heredoc de PowerShell con caracteres UTF-8 (tildes, ñ) — se corrompen en SSH.
-El método correcto es escribir el SQL a un archivo y subirlo con `scp`:
+⚠️ **Nunca usar heredoc de PowerShell con UTF-8** (tildes/ñ se corrompen en SSH).
 
 ```bash
-# 1. Escribir SQL a c:\tmp\sync.sql con Write tool (soporta UTF-8)
+# 1. Escribir SQL con Write tool a c:\tmp\sync.sql
 # 2. Subir y ejecutar:
-scp /c/tmp/sync.sql root@64.23.231.86:/tmp/sync.sql && ssh root@64.23.231.86 "sudo -u postgres psql -p 5433 -d filosofia -f /tmp/sync.sql"
+scp /c/tmp/sync.sql root@data.arrebolweddings.com:/tmp/sync.sql && \
+  ssh root@data.arrebolweddings.com "docker exec -i timeline-db psql -U filosofia -d filosofia < /tmp/sync.sql"
 ```
 
-El SQL siempre incluye `OVERRIDING SYSTEM VALUE` + `ON CONFLICT DO NOTHING` + `setval` al final:
-
+Patrón SQL obligatorio:
 ```sql
 INSERT INTO philosophers (id, ...) OVERRIDING SYSTEM VALUE VALUES (...) ON CONFLICT (id) DO NOTHING;
 INSERT INTO statements (id, ...) OVERRIDING SYSTEM VALUE VALUES (...) ON CONFLICT (id) DO NOTHING;
@@ -114,90 +87,73 @@ SELECT setval(pg_get_serial_sequence('statements', 'id'), (SELECT MAX(id) FROM s
 SELECT setval(pg_get_serial_sequence('connections', 'id'), (SELECT MAX(id) FROM connections));
 ```
 
-Hacer sync en background mientras se trabaja en el siguiente tema.
+### 5. Deploy de código (al terminar módulo completo)
+Bump `frontend/src/version.ts` en PATCH.
 
-### 6. Versioning y deploy de código
-
-Commit y deploy **al terminar el módulo completo**, no por tema individual.
-Bump `frontend/src/version.ts` en PATCH una vez por módulo:
-
-```typescript
-export const VERSION = '1.3.x';
-```
-
-Deploy:
-```powershell
-ssh root@64.23.231.86 "cd /var/www/timeline && git pull origin main && cd frontend && npm run build && pm2 restart filosofia-frontend"
+```bash
+ssh root@data.arrebolweddings.com "cd /opt/timeline && git pull && docker compose up -d --build frontend backend"
 ```
 
 ---
 
-## IDs de referencia rápida
+## Taxonomía
 
-### Schools
-| id | nombre |
-|----|--------|
-| 1 | Presocráticos | 2 | Sofistas | 3 | Platonismo | 4 | Aristotelismo |
-| 5 | Estoicismo | 6 | Epicureísmo | 7 | Escolástica | 8 | Humanismo |
-| 9 | Racionalismo | 10 | Empirismo | 11 | Idealismo Alemán | 12 | Positivismo |
-| 13 | Existencialismo | 14 | Fenomenología | 15 | Filosofía Analítica |
-| 17 | Neoplatonismo | 18 | Escepticismo | 19 | Nominalismo |
+### Categories (ramas, 12)
+1. Ética · 2. Metafísica · 3. Epistemología · 4. Política · 5. Estética · 6. Lenguaje · 7. Antropología · 8. Religión · 9. Ciencia · 10. Naturaleza · 11. Mente · 12. Lógica
 
-### Periods
-| id | nombre |
-|----|--------|
-| 1 | Filosofía Antigua | 2 | Filosofía Moderna | 3 | Filosofía del s. XIX |
-| 4 | Filosofía del s. XX | 5 | Filosofía Contemporánea | 6 | Filosofía Medieval | 7 | Renacimiento |
+### Schools (32)
+1 Presocráticos · 2 Sofistas · 3 Platonismo · 4 Aristotelismo · 5 Estoicismo · 6 Epicureísmo · 7 Escolástica · 8 Humanismo · 9 Racionalismo · 10 Empirismo · 11 Idealismo Alemán · 12 Positivismo · 13 Existencialismo · 14 Fenomenología · 15 Filosofía Analítica · 17 Neoplatonismo · 18 Escepticismo · 19 Nominalismo · 20–32 expandidas (consultar DB)
 
-### Estado actual de IDs (actualizar tras cada batch)
-- Filósofos: hasta **#175** (Michel Foucault)
-- Statements: hasta **#421** (Arendt — política como espacio público)
-- Connections: hasta **#765** (M21 completo)
+### Periods (7)
+1 Antigua · 2 Moderna · 3 s. XIX · 4 s. XX · 5 Contemporánea · 6 Medieval · 7 Renacimiento
 
-### Changelog de versiones (solo software/UI/UX)
+### Tags (79, en 4 tipos)
+**tema · método · corriente · concepto.** Ver tabla `tags` para lista completa.
+**Regla de tagging:** se decide por contenido del statement, no por filósofo.
 
-**Regla:** Las versiones reflejan SOLO cambios de software (UI, UX, features, fixes). Las publicaciones de contenido filosófico se registran automáticamente en la categoría `proposiciones` vía triggers y NO bumpean versión.
+---
+
+## Errores frecuentes
+
+| Error | Solución |
+|-------|----------|
+| `No se pueden conectar statements del mismo filósofo` | Trigger `trg_no_same_philosopher` — usar filósofos distintos |
+| `Could not resolve authentication method` | Setear `$env:ANTHROPIC_API_KEY` desde `c:\Projects\digest\.env` |
+| IDs divergen local/prod | Usar `OVERRIDING SYSTEM VALUE` + `ON CONFLICT DO NOTHING` + `setval` |
+| Caracteres rotos en SSH (tildes, ñ) | Write tool → scp → `psql -f`, nunca heredoc |
+| Statement duplicado | `SELECT` por `philosopher_id` antes de proponer |
+
+---
+
+## Changelog (últimas versiones)
+
+**Regla:** versiones reflejan SOLO software (UI/UX/features/fixes). Publicar contenido NO bumpea versión — se registra en categoría `proposiciones` vía triggers.
 
 | Versión | Fecha | Cambio |
 |---------|-------|--------|
-| 2.0.2 | 2026-05-14 | Filename PNG descriptivo cuando se exporta con chips activos: incluye slugs de épocas, ramas, escuelas y rango de años (ej. `timeline-etica-estoicismo-100ac-200.png`). |
-| 2.0.1 | 2026-05-14 | Performance: drag y zoom en zoom alto dejan de tartamudear. Sustituido `svg.call(zoom.transform)` por `__zoom` directo en el path caliente, GPU layers en SVG y `<g>` (will-change: transform), `pointer-events: none` en las 713 conexiones, sync D3 solo al final de cada interacción. |
-| 2.0.0 | 2026-05-14 | **Rediseño mayor.** Sistema de filtros declarativos por Época, Rama, Escuela y rango de Años (chips combinables, compactación + auto-zoom). Recategorización profunda del corpus: 12 ramas filosóficas (vs 3 efectivas previas, ahora Política, Estética, Lenguaje, Antropología, Religión, Ciencia, Naturaleza, Mente, Lógica reales) + 70 tags semánticos (tema/método/corriente/concepto) + 32 escuelas. Modo Meditación que oculta UI y deja solo el canvas. URLs compartibles preservan el estado completo de filtros. Wheel zoom suavizado. |
-| 1.5.1 | 2026-05-13 | OG de filósofo simplificado: solo nombre y fechas, sin kicker "Filósofo", sin nacionalidad, sin emoji en el footer. |
-| 1.5.0 | 2026-05-13 | Open Graph dinámico por filtro: `generateMetadata` lee `?philosopher` / `?statement` y publica título, descripción y `og:image` específicos. Imagen OG (1200×630) se renderiza on-demand desde `/api/og` con `ImageResponse` (edge runtime). |
-| 1.4.2 | 2026-05-13 | Fix: el nombre dinámico del PNG no incluía el filósofo al exportar una proposición, porque el lookup ignoraba el wrapper `philosophers[i].philosopher` del shape del API. |
-| 1.4.1 | 2026-05-13 | Notificaciones toast (sonner) para Compartir y Exportar PNG. Nombre dinámico del PNG según filtro activo (`filosofo-{slug}.png` o `proposicion-{slug}-{id}.png`). |
-| 1.4.0 | 2026-05-13 | URLs compartibles: los filtros del timeline se sincronizan con query params (`?philosopher=X` / `?statement=Y`) y se pueden copiar al portapapeles desde un botón Share. |
-| 1.3.4 | 2026-05-07 | Fix: botón de reset zoom funciona sin filtro activo. |
-| 1.3.3 | 2026-05-07 | Badge de conexiones en el timeline. |
-| 1.3.2 | 2026-05-07 | Footer global, páginas /legal y /privacidad, sección Sobre mí. Fix: fechas de filósofo. |
-| 1.3.1 | 2026-05-06 | UX: momentum drag/zoom, transiciones suaves al agrupar, fix conexiones extra, pointer-events, click-outside suave. |
-| 1.3.0 | 2026-05-06 | Logs paginados de 10 en 10 + header fijo + spacing compacto. |
-| 1.2.2 | 2026-05-05 | Registro de cambios automático mediante triggers PostgreSQL. |
-| 1.2.1 | 2026-05-05 | Página de inicio rediseñada: hero con typing animation. |
-| 1.2.0 | 2026-05-03 | Rediseño layout: eje diagonal único, filósofos y proposiciones sobre una sola línea. |
-| 1.1.5 | 2026-04-28 | Fix race condition al hacer clic rápido. |
-| 1.1.4 | 2026-04-25 | Hover reactivo muestra conexiones relacionadas. |
-| 1.1.3 | 2026-04-22 | Compactación sin huecos al filtrar. |
-| 1.1.2 | 2026-04-20 | Semicírculos SVG 180° (verdes acuerdo, rojos desacuerdo). |
-| 1.1.1 | 2026-04-15 | Trigger batch changelog agrupa inserts del mismo módulo. |
-| 1.1.0 | 2026-02-10 | NextAuth para panel de administración. |
-| 1.0.0 | 2025-10-22 | Lanzamiento inicial — timeline con presocráticos. |
+| 2.0.3 | 2026-05-14 | Filósofos vivos: muestra "presente" en lugar de campo vacío en timeline, lista, detalle y OG. Stats sidebar dice "Edad" en vez de "Vivió" y calcula contra año actual. |
+| 2.0.2 | 2026-05-14 | Filename PNG descriptivo con chips activos. |
+| 2.0.1 | 2026-05-14 | Performance: drag/zoom fluidos en zoom alto (`__zoom` directo, GPU layers, `pointer-events:none` en conexiones). |
+| 2.0.0 | 2026-05-14 | **Rediseño mayor.** Filtros declarativos (Época·Rama·Escuela·Años, chips combinables), 12 ramas filosóficas reales, 70 tags semánticos, 32 escuelas, Modo Meditación, URLs compartibles. |
+| 1.5.x | 2026-05-13 | OG dinámico por filtro con `/api/og` (edge runtime). |
+| 1.4.x | 2026-05-13 | URLs compartibles, toasts (sonner), nombre dinámico de PNG. |
+| 1.3.x | 2026-05-06 | UX: momentum drag/zoom, footer global, badge conexiones, paginación logs. |
+| 1.2.x | 2026-05-03 | Rediseño layout diagonal único, triggers de changelog automático. |
+| 1.1.x | 2026-04-15 | NextAuth admin, hover reactivo, semicírculos verdes/rojos. |
+| 1.0.0 | 2025-10-22 | Lanzamiento inicial — presocráticos. |
 
 ---
 
-## Errores frecuentes y soluciones
+## Infraestructura
 
-| Error | Causa | Solución |
-|-------|-------|----------|
-| `No se pueden conectar statements del mismo filósofo` | Trigger `trg_no_same_philosopher` | Verificar que `from` y `to` son de filósofos distintos |
-| `Could not resolve authentication method` | `ANTHROPIC_API_KEY` no heredada en background | Leer key desde `c:\Projects\digest\.env` y setear `$env:ANTHROPIC_API_KEY` |
-| IDs divergen entre local y prod | Inserciones sin `OVERRIDING SYSTEM VALUE` | Siempre usar el patrón con `ON CONFLICT DO NOTHING` + `setval` |
-| Caracteres rotos en producción (tildes, ñ) | Heredoc de PowerShell corrompe UTF-8 en SSH | Escribir SQL con Write tool a `c:\tmp\*.sql`, subir con `scp`, ejecutar con `psql -f` |
-| Statement de Wittgenstein/Jaspers/etc. duplicado | No verificar existentes antes de proponer | Siempre `SELECT` primero por `philosopher_id` |
+- **Host prod:** `data.arrebolweddings.com` (138.68.55.125, 8GB)
+- **Stack:** Docker + Traefik v2.10 + Let's Encrypt (`le`)
+- **Containers timeline:** `timeline-frontend`, `timeline-backend`, `timeline-db` (postgres:17-alpine)
+- **Compose files:** `/opt/timeline/docker-compose.yml`
+- **Network compartida:** `traefik-public` (external)
+- **Notas Docker:** backend `node:20-slim` (libssl Prisma); frontend `--legacy-peer-deps` (next-themes vs React 18)
 
 ---
 
 ## Swarm config
-
-Ver `.claude-flow/filosofia-timeline.yml` para la configuración de agentes paralelos.
+Ver `.claude-flow/filosofia-timeline.yml`.

@@ -61,7 +61,7 @@ export async function GET(req: NextRequest) {
           birth != null && death != null
             ? `${fmt(birth)} — ${fmt(death)}`
             : birth != null
-              ? `${fmt(birth)} —`
+              ? `${fmt(birth)} — presente`
               : null;
       }
     } else if (statementId !== null) {

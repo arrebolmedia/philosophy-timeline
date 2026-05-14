@@ -555,7 +555,7 @@ export function TimelineCanvas() {
     philoItems.each(function(d: any) {
       const group = d3.select(this);
       const birth = d.birthYear < 0 ? `${Math.abs(d.birthYear)} BCE` : `${d.birthYear}`;
-      const death = d.deathYear < 0 ? `${Math.abs(d.deathYear)} BCE` : `${d.deathYear}`;
+      const death = d.deathYear == null ? 'presente' : (d.deathYear < 0 ? `${Math.abs(d.deathYear)} BCE` : `${d.deathYear}`);
       group.append('text')
         .attr('class', 'philo-years')
         .attr('x', 0)

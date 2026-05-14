@@ -134,7 +134,7 @@ export function PhilosophersList() {
                     <Calendar className="h-3 w-3" />
                     <span>
                       {philosopher.birthYear < 0 ? `${Math.abs(philosopher.birthYear)} a.C.` : philosopher.birthYear} -{' '}
-                      {philosopher.deathYear < 0 ? `${Math.abs(philosopher.deathYear)} a.C.` : philosopher.deathYear}
+                      {philosopher.deathYear == null ? 'presente' : (philosopher.deathYear < 0 ? `${Math.abs(philosopher.deathYear)} a.C.` : philosopher.deathYear)}
                     </span>
                   </div>
                 </div>

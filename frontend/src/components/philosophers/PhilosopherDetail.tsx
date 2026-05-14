@@ -68,8 +68,10 @@ export function PhilosopherDetail({ philosopher }: Props) {
                       ? `${Math.abs(philosopher.birthYear)} a.C.` 
                       : philosopher.birthYear} 
                     {' - '}
-                    {philosopher.deathYear < 0 
-                      ? `${Math.abs(philosopher.deathYear)} a.C.` 
+                    {philosopher.deathYear == null
+                      ? 'presente'
+                      : philosopher.deathYear < 0
+                      ? `${Math.abs(philosopher.deathYear)} a.C.`
                       : philosopher.deathYear}
                   </span>
                 </div>
@@ -133,9 +135,9 @@ export function PhilosopherDetail({ philosopher }: Props) {
                       </div>
                     )}
                     <div className="flex justify-between items-center">
-                      <span className="text-sm text-muted-foreground">Vivió</span>
+                      <span className="text-sm text-muted-foreground">{philosopher.deathYear == null ? 'Edad' : 'Vivió'}</span>
                       <span className="text-sm font-medium">
-                        {philosopher.deathYear - philosopher.birthYear} años
+                        {(philosopher.deathYear ?? new Date().getFullYear()) - philosopher.birthYear} años
                       </span>
                     </div>
                   </div>
