@@ -184,10 +184,17 @@ export function TimelineCanvas() {
        .style('user-select', 'none')
        .style('-webkit-user-select', 'none')
        .style('-moz-user-select', 'none')
-       .style('-ms-user-select', 'none');
+       .style('-ms-user-select', 'none')
+       .style('transform', 'translateZ(0)') // promote SVG itself to GPU layer
+       .style('will-change', 'transform');
 
-    // Create main group for zoom/pan transformations
-    const g = svg.append('g').attr('class', 'main-group');
+    // Create main group for zoom/pan transformations.
+    // GPU hints: promote to its own compositor layer so transform animations are cheap.
+    const g = svg.append('g')
+      .attr('class', 'main-group')
+      .style('will-change', 'transform')
+      .style('transform-origin', '0 0')
+      .style('backface-visibility', 'hidden');
 
     // Diagonal axis direction (matches layout ANGLE = 40°)
     const _diagCos = Math.cos(40 * Math.PI / 180);
@@ -202,7 +209,11 @@ export function TimelineCanvas() {
 
     const applyZoomMomentum = () => {
       _zoomVelocity *= 0.88;
-      if (Math.abs(_zoomVelocity) < 0.0003) return;
+      if (Math.abs(_zoomVelocity) < 0.0003) {
+        // Sync D3 zoom state once at the end (not per-frame)
+        svg.call(zoom.transform as any, prevTransformRef.current);
+        return;
+      }
       const cur = prevTransformRef.current;
       const targetK = Math.max(0.1, Math.min(4, cur.k * (1 + _zoomVelocity)));
       const mTx = _zoomCx - (_zoomCx - cur.x) * (targetK / cur.k);
@@ -215,7 +226,7 @@ export function TimelineCanvas() {
         .scale(targetK);
       prevTransformRef.current = next;
       g.attr('transform', next.toString());
-      svg.call(zoom.transform as any, next);
+      // Do NOT call svg.call(zoom.transform) per frame — sync only at end
       _zoomRaf = requestAnimationFrame(applyZoomMomentum);
     };
 
@@ -233,13 +244,11 @@ export function TimelineCanvas() {
       _zoomCy = e.offsetY;
 
       // Normalize delta across trackpad / mouse wheel
-      // deltaMode 0=pixel, 1=line, 2=page. Convert all to pixel-equivalent then dampen.
       const px = -e.deltaY * (e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? 100 : 1);
-      // Clamp per-event delta to avoid huge jumps from chunky mouse wheels
       const clamped = Math.max(-120, Math.min(120, px));
       const factor = Math.pow(1.0015, clamped);
 
-      // Apply immediate zoom
+      // Apply immediate zoom — only DOM, no D3 sync per event
       const cur = prevTransformRef.current;
       const targetK = Math.max(0.1, Math.min(4, cur.k * factor));
       const mTx = _zoomCx - (_zoomCx - cur.x) * (targetK / cur.k);
@@ -252,12 +261,11 @@ export function TimelineCanvas() {
         .scale(targetK);
       prevTransformRef.current = next;
       g.attr('transform', next.toString());
-      svg.call(zoom.transform as any, next);
+      // Sync D3 internal __zoom directly (no event dispatch, no traversal)
+      (svg.node() as any).__zoom = next;
 
-      // Accumulate velocity continuously — no debounce pause
+      // Accumulate velocity for momentum
       _zoomVelocity = _zoomVelocity * 0.7 + (factor - 1) * 0.3;
-
-      // Restart momentum loop each event (seamless handoff)
       _zoomRaf = requestAnimationFrame(applyZoomMomentum);
     }, { passive: false });
 
@@ -297,24 +305,30 @@ export function TimelineCanvas() {
           .scale(t.k);
         prevTransformRef.current = newTransform;
         g.attr('transform', newTransform.toString());
-        svg.call(zoom.transform as any, newTransform);
+        // Direct __zoom sync (no event dispatch, no DOM traversal)
+        (svg.node() as any).__zoom = newTransform;
         (svg.node() as any).__lastZoomTime = Date.now();
       })
       .on('end', () => {
-        // Momentum: velocity = last delta between two drag events
+        // Sync D3 zoom state once at end of drag
+        svg.call(zoom.transform as any, prevTransformRef.current);
+        // Momentum
         let velocity = _lastScalar - _prevScalar;
         if (Math.abs(velocity) < 0.5) return;
         const decay = 0.92;
         const applyMomentum = () => {
           velocity *= decay;
-          if (Math.abs(velocity) < 0.3) return;
+          if (Math.abs(velocity) < 0.3) {
+            svg.call(zoom.transform as any, prevTransformRef.current);
+            return;
+          }
           const cur = prevTransformRef.current;
           const newTransform = d3.zoomIdentity
             .translate(cur.x + velocity * _diagCos, cur.y + velocity * _diagSin)
             .scale(cur.k);
           prevTransformRef.current = newTransform;
           g.attr('transform', newTransform.toString());
-          svg.call(zoom.transform as any, newTransform);
+          (svg.node() as any).__zoom = newTransform;
           _momentumRaf = requestAnimationFrame(applyMomentum);
         };
         _momentumRaf = requestAnimationFrame(applyMomentum);
@@ -425,7 +439,8 @@ export function TimelineCanvas() {
       .attr('fill', 'none')
       .attr('stroke', (d: any) => colorFor(d.connectionType))
       .attr('stroke-width', 2)
-      .attr('opacity', 1);
+      .attr('opacity', 1)
+      .style('pointer-events', 'none');  // connections never receive events — skip hit-testing
 
     // ===== THEN DRAW PHILOSOPHERS (middle layer) =====
     const philoG = g.append('g').attr('class', 'philosophers');

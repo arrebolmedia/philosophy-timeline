@@ -160,6 +160,7 @@ ssh root@64.23.231.86 "cd /var/www/timeline && git pull origin main && cd fronte
 
 | Versión | Fecha | Cambio |
 |---------|-------|--------|
+| 2.0.1 | 2026-05-14 | Performance: drag y zoom en zoom alto dejan de tartamudear. Sustituido `svg.call(zoom.transform)` por `__zoom` directo en el path caliente, GPU layers en SVG y `<g>` (will-change: transform), `pointer-events: none` en las 713 conexiones, sync D3 solo al final de cada interacción. |
 | 2.0.0 | 2026-05-14 | **Rediseño mayor.** Sistema de filtros declarativos por Época, Rama, Escuela y rango de Años (chips combinables, compactación + auto-zoom). Recategorización profunda del corpus: 12 ramas filosóficas (vs 3 efectivas previas, ahora Política, Estética, Lenguaje, Antropología, Religión, Ciencia, Naturaleza, Mente, Lógica reales) + 70 tags semánticos (tema/método/corriente/concepto) + 32 escuelas. Modo Meditación que oculta UI y deja solo el canvas. URLs compartibles preservan el estado completo de filtros. Wheel zoom suavizado. |
 | 1.5.1 | 2026-05-13 | OG de filósofo simplificado: solo nombre y fechas, sin kicker "Filósofo", sin nacionalidad, sin emoji en el footer. |
 | 1.5.0 | 2026-05-13 | Open Graph dinámico por filtro: `generateMetadata` lee `?philosopher` / `?statement` y publica título, descripción y `og:image` específicos. Imagen OG (1200×630) se renderiza on-demand desde `/api/og` con `ImageResponse` (edge runtime). |
