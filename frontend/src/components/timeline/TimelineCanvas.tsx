@@ -83,6 +83,7 @@ export function TimelineCanvas() {
   // Stable signature so the render effect re-runs when chips change
   const chipSignature = `${chipPeriods.join(',')}|${chipSchools.join(',')}|${chipCategories.join(',')}|${chipYears ? `${chipYears[0]}-${chipYears[1]}` : ''}`;
   const [legendCollapsed, setLegendCollapsed] = useState(false);
+  const [catalogs, setCatalogs] = useState<{ periods: Record<number,string>; schools: Record<number,string>; categories: Record<number,string> }>({ periods: {}, schools: {}, categories: {} });
   const meditationMode = searchParams.get('meditation') === '1';
   const setMeditationMode = useCallback((next: boolean | ((prev: boolean) => boolean)) => {
     const value = typeof next === 'function' ? next(meditationMode) : next;
@@ -142,6 +143,22 @@ export function TimelineCanvas() {
     };
 
     fetchTimelineData();
+  }, []);
+
+  useEffect(() => {
+    Promise.all([
+      fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/periods`).then(r => r.json()).catch(() => null),
+      fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/schools`).then(r => r.json()).catch(() => null),
+      fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/categories`).then(r => r.json()).catch(() => null),
+    ]).then(([p, s, c]) => {
+      const toMap = (arr: any[]): Record<number,string> =>
+        Object.fromEntries((arr || []).map(x => [x.id, x.slug || x.name]));
+      setCatalogs({
+        periods:    toMap(p?.data || []),
+        schools:    toMap(s?.data || []),
+        categories: toMap(c?.data || []),
+      });
+    });
   }, []);
 
   useEffect(() => {
@@ -894,6 +911,24 @@ export function TimelineCanvas() {
       } else {
         filename = `proposicion-${filteredStatement}`;
       }
+    } else if (hasChipFilters) {
+      // Build filename from active chips: timeline-{periods}-{categories}-{schools}-{years}
+      const parts: string[] = ['timeline'];
+      if (chipPeriods.length > 0) {
+        parts.push(chipPeriods.map(id => catalogs.periods[id]).filter(Boolean).map(slugify).join('-'));
+      }
+      if (chipCategories.length > 0) {
+        parts.push(chipCategories.map(id => catalogs.categories[id]).filter(Boolean).map(slugify).join('-'));
+      }
+      if (chipSchools.length > 0) {
+        parts.push(chipSchools.map(id => catalogs.schools[id]).filter(Boolean).map(slugify).join('-'));
+      }
+      if (chipYears) {
+        const fmt = (y: number) => y < 0 ? `${Math.abs(y)}ac` : `${y}`;
+        parts.push(`${fmt(chipYears[0])}-${fmt(chipYears[1])}`);
+      }
+      const joined = parts.filter(p => p.length > 0).join('-').slice(0, 100);
+      if (joined.length > 'timeline'.length) filename = joined;
     }
 
     try {
@@ -928,7 +963,7 @@ export function TimelineCanvas() {
     } finally {
       URL.revokeObjectURL(svgUrl);
     }
-  }, [filteredPhilosopher, filteredStatement, data]);
+  }, [filteredPhilosopher, filteredStatement, data, hasChipFilters, chipSignature, catalogs]);
 
 
   // Effect to handle hover and filter opacity changes
