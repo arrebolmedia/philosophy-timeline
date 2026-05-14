@@ -1,6 +1,8 @@
 import { Suspense } from 'react';
 import type { Metadata } from 'next';
 import { TimelineCanvas } from '@/components/timeline/TimelineCanvas';
+import { FilterBar } from '@/components/timeline/FilterBar';
+import { TimelinePageInner } from '@/components/timeline/TimelinePageInner';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
@@ -104,13 +106,9 @@ export async function generateMetadata({
 
 export default function TimelinePage() {
   return (
-    <div className="flex flex-col bg-background overflow-hidden" style={{height: '100dvh', paddingTop: '64px'}}>
-      <section className="flex-1 flex flex-col">
-        <Suspense fallback={<CanvasSkeleton />}>
-          <TimelineCanvas />
-        </Suspense>
-      </section>
-    </div>
+    <Suspense fallback={<CanvasSkeleton />}>
+      <TimelinePageInner />
+    </Suspense>
   );
 }
 

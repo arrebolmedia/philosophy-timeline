@@ -6,7 +6,7 @@ import * as d3 from 'd3';
 import { toast } from 'sonner';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import { Info, ZoomIn, ZoomOut, Maximize2, ChevronDown, Download, Share2 } from 'lucide-react';
+import { Info, ZoomIn, ZoomOut, Maximize2, ChevronDown, Download, Share2, Eye, EyeOff } from 'lucide-react';
 import type { TimelineData, StatementNode, ConnectionLink, PhilosopherNode } from '@/types/timeline';
 
 const CONNECTION_COLORS = {
@@ -63,13 +63,43 @@ export function TimelineCanvas() {
     const s = searchParams.get('statement');
     return s ? parseInt(s, 10) : null;
   });
+
+  // Declarative filters (chips): periods, schools, categories, years
+  const parseIdList = (raw: string | null): number[] =>
+    raw ? raw.split(',').map(s => parseInt(s, 10)).filter(n => Number.isFinite(n)) : [];
+  const parseYearRange = (raw: string | null): [number, number] | null => {
+    if (!raw) return null;
+    const m = raw.match(/^(-?\d+)-(-?\d+)$/);
+    if (!m) return null;
+    const a = parseInt(m[1], 10), b = parseInt(m[2], 10);
+    if (!Number.isFinite(a) || !Number.isFinite(b)) return null;
+    return [Math.min(a, b), Math.max(a, b)];
+  };
+  const chipPeriods    = parseIdList(searchParams.get('periods'));
+  const chipSchools    = parseIdList(searchParams.get('schools'));
+  const chipCategories = parseIdList(searchParams.get('categories'));
+  const chipYears      = parseYearRange(searchParams.get('years'));
+  const hasChipFilters = chipPeriods.length > 0 || chipSchools.length > 0 || chipCategories.length > 0 || !!chipYears;
+  // Stable signature so the render effect re-runs when chips change
+  const chipSignature = `${chipPeriods.join(',')}|${chipSchools.join(',')}|${chipCategories.join(',')}|${chipYears ? `${chipYears[0]}-${chipYears[1]}` : ''}`;
   const [legendCollapsed, setLegendCollapsed] = useState(false);
+  const meditationMode = searchParams.get('meditation') === '1';
+  const setMeditationMode = useCallback((next: boolean | ((prev: boolean) => boolean)) => {
+    const value = typeof next === 'function' ? next(meditationMode) : next;
+    const params = new URLSearchParams(searchParams.toString());
+    if (value) params.set('meditation', '1');
+    else params.delete('meditation');
+    const qs = params.toString();
+    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+  }, [meditationMode, searchParams, pathname, router]);
   const [canvasKey, setCanvasKey] = useState(0);
   const [appVersion, setAppVersion] = useState<string | null>(null);
 
-  // Sync filter state to URL query params
+  // Sync filter state to URL query params (preserve other params like meditation, chips)
   useEffect(() => {
-    const params = new URLSearchParams();
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete('philosopher');
+    params.delete('statement');
     if (filteredPhilosopher !== null) params.set('philosopher', String(filteredPhilosopher));
     else if (filteredStatement !== null) params.set('statement', String(filteredStatement));
     const queryString = params.toString();
@@ -203,8 +233,11 @@ export function TimelineCanvas() {
       _zoomCy = e.offsetY;
 
       // Normalize delta across trackpad / mouse wheel
-      const delta = -e.deltaY * (e.deltaMode === 1 ? 20 : e.deltaMode === 2 ? 400 : 1);
-      const factor = Math.pow(1.001, delta);
+      // deltaMode 0=pixel, 1=line, 2=page. Convert all to pixel-equivalent then dampen.
+      const px = -e.deltaY * (e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? 100 : 1);
+      // Clamp per-event delta to avoid huge jumps from chunky mouse wheels
+      const clamped = Math.max(-120, Math.min(120, px));
+      const factor = Math.pow(1.0015, clamped);
 
       // Apply immediate zoom
       const cur = prevTransformRef.current;
@@ -392,7 +425,7 @@ export function TimelineCanvas() {
       .attr('fill', 'none')
       .attr('stroke', (d: any) => colorFor(d.connectionType))
       .attr('stroke-width', 2)
-      .attr('opacity', 1); // Solid color, no transparency
+      .attr('opacity', 1);
 
     // ===== THEN DRAW PHILOSOPHERS (middle layer) =====
     const philoG = g.append('g').attr('class', 'philosophers');
@@ -605,7 +638,7 @@ export function TimelineCanvas() {
     }
 
     // no explicit cleanup necessary beyond clearing svg at start of effect
-  }, [data, highlightId, canvasKey]);
+  }, [data, highlightId, canvasKey, chipSignature]);
 
   // Zoom control functions
   const handleZoomIn = useCallback(() => {
@@ -891,9 +924,9 @@ export function TimelineCanvas() {
     
     // Save previous filter state before updating
     const wasFilterActive = filterActiveRef.current;
-    
-    // Update ref to indicate if filter is active
-    filterActiveRef.current = !!(filteredPhilosopher || filteredStatement);
+
+    // Update ref to indicate if filter is active (reactive or chip-based)
+    filterActiveRef.current = !!(filteredPhilosopher || filteredStatement || hasChipFilters);
     
     // Get all connections, statements, and philosophers for relationship logic
     const connections = data?.connections || [];
@@ -918,6 +951,23 @@ export function TimelineCanvas() {
     let activePhilosophers = new Set<number>();
     let activeStatements = new Set<number>();
     let activeConnections = new Set<string>();
+
+    // Compute chip-based active sets (used by the chip branch below)
+    const philoMatchesChips = (p: any): boolean => {
+      if (chipYears) {
+        const [yMin, yMax] = chipYears;
+        const by = p.birthYear ?? -10000;
+        const dy = p.deathYear ?? 9999;
+        if (dy < yMin || by > yMax) return false;
+      }
+      if (chipPeriods.length > 0 && !chipPeriods.includes(p.periodId)) return false;
+      if (chipSchools.length > 0 && (p.schoolId == null || !chipSchools.includes(p.schoolId))) return false;
+      return true;
+    };
+    const stmtMatchesChips = (s: any): boolean => {
+      if (chipCategories.length > 0 && !chipCategories.includes(s.categoryId)) return false;
+      return true;
+    };
 
     if (filteredPhilosopher) {
       // Show clicked philosopher + all philosophers connected to its statements
@@ -956,6 +1006,31 @@ export function TimelineCanvas() {
       // Add only connections that directly involve the selected statement
       connections.forEach((conn: ConnectionLink) => {
         if (conn.statementFromId === filteredStatement || conn.statementToId === filteredStatement) {
+          activeConnections.add(`${conn.statementFromId}-${conn.statementToId}`);
+        }
+      });
+    } else if (hasChipFilters) {
+      // Chip filters mode: compute matching philosophers/statements and re-flow them
+      const matchingPhilos = new Set<number>();
+      svg.selectAll('.philosopher-label').each(function(d: any) {
+        if (philoMatchesChips(d)) matchingPhilos.add(d.id);
+      });
+      const matchingStmts = new Set<number>();
+      svg.selectAll('.statement').each(function(d: any) {
+        if (matchingPhilos.has(d.philosopherId) && stmtMatchesChips(d)) {
+          matchingStmts.add(d.id);
+        }
+      });
+      // Drop philosophers without any visible statement
+      const philosWithStmts = new Set<number>();
+      svg.selectAll('.statement').each(function(d: any) {
+        if (matchingStmts.has(d.id)) philosWithStmts.add(d.philosopherId);
+      });
+      activePhilosophers = philosWithStmts;
+      activeStatements  = matchingStmts;
+      // Active connections: both endpoints in matchingStmts
+      connections.forEach((conn: ConnectionLink) => {
+        if (matchingStmts.has(conn.statementFromId) && matchingStmts.has(conn.statementToId)) {
           activeConnections.add(`${conn.statementFromId}-${conn.statementToId}`);
         }
       });
@@ -1016,13 +1091,14 @@ export function TimelineCanvas() {
     }
 
     // Apply opacity changes
-    const hasFilter = filteredPhilosopher || filteredStatement;
+    const hasFilter = filteredPhilosopher || filteredStatement || hasChipFilters;
     const hasHover = hoveredPhilosopher || hoveredStatement;
     const isActive = hasFilter || hasHover;
 
     if (isActive) {
       // On FILTER by statement (click), reorganize in compact staircase layout
-      if (filteredStatement) {
+      // Treat chip filters as equivalent to filteredPhilosopher for compaction layout
+      if (filteredStatement && !hasChipFilters) {
         // Get active philosophers sorted by birth year
         const activePhilosList: any[] = [];
         svg.selectAll('.philosopher-label').each(function(d: any) {
@@ -1192,8 +1268,9 @@ export function TimelineCanvas() {
             .attrTween('d', () => d3.interpolateString(startPath, endPath));
         });
         
-      } else if (filteredPhilosopher) {
+      } else if (filteredPhilosopher || hasChipFilters) {
         // Compact staircase: clicked philosopher (all statements) + connected philosophers (only related statements)
+        // OR: chip-filter mode (activePhilosophers/activeStatements from chip branch above)
         setHoveredPhilosopher(null);
         setHoveredStatement(null);
 
@@ -1483,7 +1560,7 @@ export function TimelineCanvas() {
       }
     }
 
-  }, [hoveredPhilosopher, hoveredStatement, filteredPhilosopher, filteredStatement, data]);
+  }, [hoveredPhilosopher, hoveredStatement, filteredPhilosopher, filteredStatement, data, chipSignature]);
 
   if (loading) {
     return (
@@ -1523,13 +1600,6 @@ export function TimelineCanvas() {
   return (
     <div className="w-full h-full flex flex-col">
       <div className="relative flex-1 flex flex-col min-h-0">
-        {/* Info badge */}
-        <div className="absolute top-4 left-4 z-10 bg-white/80 backdrop-blur px-3 py-1 rounded shadow-sm">
-          <div className="text-xs text-gray-600 font-medium">
-            {data.philosophers?.length || 0} filósofos · {(data?.statements || []).length || 0} declaraciones · {(data?.connections || []).length || 0} conexiones
-          </div>
-        </div>
-
         {/* Zoom controls */}
         <div className="absolute top-4 right-4 z-10 flex gap-2">
           <Button
@@ -1537,7 +1607,7 @@ export function TimelineCanvas() {
             variant="secondary"
             onClick={handleZoomIn}
             title="Acercar (Zoom In)"
-            className="h-9 w-9"
+            className={`h-9 w-9 transition-opacity duration-500 ${meditationMode ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
           >
             <ZoomIn className="h-4 w-4" />
           </Button>
@@ -1546,7 +1616,7 @@ export function TimelineCanvas() {
             variant="secondary"
             onClick={handleZoomOut}
             title="Alejar (Zoom Out)"
-            className="h-9 w-9"
+            className={`h-9 w-9 transition-opacity duration-500 ${meditationMode ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
           >
             <ZoomOut className="h-4 w-4" />
           </Button>
@@ -1555,7 +1625,7 @@ export function TimelineCanvas() {
             variant="secondary"
             onClick={handleResetZoom}
             title="Restablecer Vista"
-            className="h-9 w-9"
+            className={`h-9 w-9 transition-opacity duration-500 ${meditationMode ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
           >
             <Maximize2 className="h-4 w-4" />
           </Button>
@@ -1564,7 +1634,7 @@ export function TimelineCanvas() {
             variant="secondary"
             onClick={handleExportPng}
             title="Exportar como PNG"
-            className={`h-9 w-9 transition-opacity duration-300 ${filteredPhilosopher || filteredStatement ? 'opacity-100' : 'opacity-30 pointer-events-none'}`}
+            className={`h-9 w-9 transition-opacity duration-500 ${meditationMode ? 'opacity-0 pointer-events-none' : (filteredPhilosopher || filteredStatement || hasChipFilters ? 'opacity-100' : 'opacity-30 pointer-events-none')}`}
           >
             <Download className="h-4 w-4" />
           </Button>
@@ -1573,20 +1643,33 @@ export function TimelineCanvas() {
             variant="secondary"
             onClick={copyShareLink}
             title="Compartir vista actual"
-            className={`h-9 w-9 transition-opacity duration-300 ${filteredPhilosopher || filteredStatement ? 'opacity-100' : 'opacity-30 pointer-events-none'}`}
+            className={`h-9 w-9 transition-opacity duration-500 ${meditationMode ? 'opacity-0 pointer-events-none' : (filteredPhilosopher || filteredStatement || hasChipFilters ? 'opacity-100' : 'opacity-30 pointer-events-none')}`}
           >
             <Share2 className="h-4 w-4" />
+          </Button>
+          <Button
+            size="icon"
+            variant="secondary"
+            onClick={() => setMeditationMode(m => !m)}
+            title={meditationMode ? 'Salir del modo Meditación' : 'Modo Meditación'}
+            className={`h-9 w-9 transition-opacity ${meditationMode ? 'opacity-30 hover:opacity-100' : 'opacity-100'}`}
+          >
+            {meditationMode ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
           </Button>
         </div>
 
         {/* Legend and info */}
-        <div className="absolute bottom-4 left-4 z-10 bg-white/95 backdrop-blur px-4 py-3 rounded-lg shadow-md border border-gray-200">
+        <div className={`absolute bottom-4 left-4 z-10 bg-white/95 backdrop-blur px-4 py-3 rounded-lg shadow-md border border-gray-200 transition-opacity duration-500 ${meditationMode ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
           <div className="flex items-start justify-between gap-3">
             <div className="space-y-2 flex-1">
               <div className="font-bold text-sm text-gray-900">HISTORIA DE LA FILOSOFÍA</div>
               {!legendCollapsed && (
                 <>
                   <div className="text-xs text-gray-600">resumida y visualizada</div>
+
+                  <div className="text-[11px] text-gray-500">
+                    {data.philosophers?.length || 0} filósofos · {(data?.statements || []).length || 0} proposiciones · {(data?.connections || []).length || 0} conexiones
+                  </div>
 
                   {/* Color legend */}
                   <div className="pt-2 space-y-1.5 border-t border-gray-200">

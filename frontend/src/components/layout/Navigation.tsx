@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { BookOpen, Users, Map, Search } from 'lucide-react';
 import { useState, useEffect } from 'react';
@@ -15,8 +15,10 @@ const navigation = [
 
 export function Navigation() {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const meditationMode = searchParams?.get('meditation') === '1';
   const [isScrolled, setIsScrolled] = useState(false);
-  
+
   // Check if we're on an admin page
   const isAdminPage = pathname?.startsWith('/admin');
 
@@ -34,14 +36,18 @@ export function Navigation() {
     return null;
   }
 
+  // Note: meditation mode applies a fade-out via classNames below (preserves smooth transition)
+
   // Admin and timeline pages always show solid navigation, home page uses transparent on scroll
   const isTimelinePage = pathname === '/timeline';
   const shouldBeTransparent = !isAdminPage && !isScrolled && !isTimelinePage;
 
   return (
-    <nav className={`fixed top-0 w-full z-50 transition-all duration-300 ${
+    <nav className={`fixed top-0 w-full z-50 transition-all duration-500 ${
+      meditationMode ? 'opacity-0 pointer-events-none -translate-y-2' : 'opacity-100 translate-y-0'
+    } ${
       shouldBeTransparent
-        ? 'bg-transparent border-transparent' 
+        ? 'bg-transparent border-transparent'
         : 'border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 shadow-sm'
     }`}>
       <div className="container mx-auto px-4">
