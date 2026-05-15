@@ -9,13 +9,13 @@ Infra en Docker + Traefik en `data.arrebolweddings.com` (8GB).
 
 | Tabla | Último ID |
 |-------|-----------|
-| philosophers | #175 (Foucault) |
-| statements | #421 |
-| connections | #765 |
+| philosophers | #178 (Enesidemo) |
+| statements | #434 |
+| connections | #776 |
 | tags | #79 |
 
-**Módulos:** M1–M21 procesados. Próximo M22.
-**Versión:** 2.0.2
+**Módulos:** M1–M22 procesados. Próximo M23.
+**Versión:** 2.0.5
 
 ---
 
@@ -131,12 +131,10 @@ ssh root@data.arrebolweddings.com "cd /opt/timeline && git pull && docker compos
 
 | Versión | Fecha | Cambio |
 |---------|-------|--------|
-| 2.0.5 | 2026-05-15 | Performance: removidos los GPU hints (`will-change`, `translateZ(0)`, `backface-visibility`) que paradójicamente saturaban al compositor con 1500 nodos SVG, removidas las llamadas redundantes a `svg.call(zoom.transform)` que disparaban el ciclo D3 completo, y la inercia del drag-momentum se acortó (decay 0.82, threshold 0.5). |
-| 2.0.4 | 2026-05-15 | Performance zoom: eliminado el momentum del zoom (precisión > inercia) y conexiones ocultas mientras la rueda está activa (180ms tras último tick). Link de Deniz actualizado a /philo/. |
-| 2.0.3 | 2026-05-14 | Filósofos vivos: muestra "presente" en lugar de campo vacío en timeline, lista, detalle y OG. Stats sidebar dice "Edad" en vez de "Vivió" y calcula contra año actual. |
+| 2.0.5 | 2026-05-15 | Performance zoom/drag: removidos GPU hints contraproducentes (`will-change`, `translateZ(0)`) que saturaban el compositor con 1500 nodos SVG; sin momentum en zoom (precisión); inercia del drag acortada (decay 0.74, boost 0.12). Link de Deniz a /philo/. |
+| 2.0.3 | 2026-05-14 | Filósofos vivos: "presente" en lugar de NULL. Stats sidebar muestra "Edad" calculada contra año actual cuando vive. |
 | 2.0.2 | 2026-05-14 | Filename PNG descriptivo con chips activos. |
-| 2.0.1 | 2026-05-14 | Performance: drag/zoom fluidos en zoom alto (`__zoom` directo, GPU layers, `pointer-events:none` en conexiones). |
-| 2.0.0 | 2026-05-14 | **Rediseño mayor.** Filtros declarativos (Época·Rama·Escuela·Años, chips combinables), 12 ramas filosóficas reales, 70 tags semánticos, 32 escuelas, Modo Meditación, URLs compartibles. |
+| 2.0.0 | 2026-05-14 | **Rediseño mayor.** Filtros declarativos (Época·Rama·Escuela·Años, chips combinables), 12 ramas reales, 70 tags semánticos, 32 escuelas, Modo Meditación, URLs compartibles. |
 | 1.5.x | 2026-05-13 | OG dinámico por filtro con `/api/og` (edge runtime). |
 | 1.4.x | 2026-05-13 | URLs compartibles, toasts (sonner), nombre dinámico de PNG. |
 | 1.3.x | 2026-05-06 | UX: momentum drag/zoom, footer global, badge conexiones, paginación logs. |
