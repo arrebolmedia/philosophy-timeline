@@ -70,7 +70,7 @@ export default function HomePage() {
           <p className="text-base text-gray-500 leading-relaxed font-[family-name:var(--font-poppins)] text-justify" style={{textAlignLast: 'center'}}>
             Esta línea del tiempo está inspirada en el trabajo de{' '}
             <a
-              href="https://www.denizcemonduygu.com/portfolio/the-history-of-philosophy/"
+              href="https://www.denizcemonduygu.com/philo/"
               target="_blank"
               rel="noopener noreferrer"
               className="underline underline-offset-4 hover:text-gray-800 transition-colors"

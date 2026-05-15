@@ -217,37 +217,9 @@ export function TimelineCanvas() {
     const _diagCos = Math.cos(40 * Math.PI / 180);
     const _diagSin = Math.sin(40 * Math.PI / 180);
 
-    // Wheel zoom with inertia — intercept native wheel, bypass D3 zoom handler
-    let _zoomVelocity = 0;
-    let _zoomRaf = 0;
-    let _zoomDebounce = 0;
-    let _zoomCx = 0;
-    let _zoomCy = 0;
-
-    const applyZoomMomentum = () => {
-      _zoomVelocity *= 0.74;
-      if (Math.abs(_zoomVelocity) < 0.0007) {
-        // Sync D3 zoom state once at the end (not per-frame)
-        svg.call(zoom.transform as any, prevTransformRef.current);
-        // Show connections again after zoom settles
-        svg.select('g.connections').style('display', '');
-        return;
-      }
-      const cur = prevTransformRef.current;
-      const targetK = Math.max(0.1, Math.min(4, cur.k * (1 + _zoomVelocity)));
-      const mTx = _zoomCx - (_zoomCx - cur.x) * (targetK / cur.k);
-      const mTy = _zoomCy - (_zoomCy - cur.y) * (targetK / cur.k);
-      const mdx = mTx - cur.x;
-      const mdy = mTy - cur.y;
-      const mScalar = mdx * _diagCos + mdy * _diagSin;
-      const next = d3.zoomIdentity
-        .translate(cur.x + mScalar * _diagCos, cur.y + mScalar * _diagSin)
-        .scale(targetK);
-      prevTransformRef.current = next;
-      g.attr('transform', next.toString());
-      // Do NOT call svg.call(zoom.transform) per frame — sync only at end
-      _zoomRaf = requestAnimationFrame(applyZoomMomentum);
-    };
+    // Wheel zoom — instant, no momentum (precision tool, not surface emulation)
+    // Hide connections during wheel activity to avoid expensive reflows per tick
+    let _zoomConnTimer: any = 0;
 
     const zoom = d3.zoom<SVGSVGElement, unknown>()
       .scaleExtent([0.1, 4])
@@ -256,25 +228,27 @@ export function TimelineCanvas() {
 
     svg.node()!.addEventListener('wheel', (e: WheelEvent) => {
       e.preventDefault();
-      cancelAnimationFrame(_zoomRaf);
-      clearTimeout(_zoomDebounce);
 
-      // Hide connections during zoom — they're the most expensive to render
-      svg.select('g.connections').style('display', 'none');
+      // Hide connections while wheel is active; restore after pause
+      const conns = svg.select('g.connections');
+      conns.style('display', 'none');
+      clearTimeout(_zoomConnTimer);
+      _zoomConnTimer = setTimeout(() => {
+        conns.style('display', '');
+      }, 180);
 
-      _zoomCx = e.offsetX;
-      _zoomCy = e.offsetY;
+      const cx = e.offsetX;
+      const cy = e.offsetY;
 
       // Normalize delta across trackpad / mouse wheel
       const px = -e.deltaY * (e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? 100 : 1);
       const clamped = Math.max(-120, Math.min(120, px));
       const factor = Math.pow(1.0015, clamped);
 
-      // Apply immediate zoom — only DOM, no D3 sync per event
       const cur = prevTransformRef.current;
       const targetK = Math.max(0.1, Math.min(4, cur.k * factor));
-      const mTx = _zoomCx - (_zoomCx - cur.x) * (targetK / cur.k);
-      const mTy = _zoomCy - (_zoomCy - cur.y) * (targetK / cur.k);
+      const mTx = cx - (cx - cur.x) * (targetK / cur.k);
+      const mTy = cy - (cy - cur.y) * (targetK / cur.k);
       const mdx = mTx - cur.x;
       const mdy = mTy - cur.y;
       const mScalar = mdx * _diagCos + mdy * _diagSin;
@@ -285,10 +259,6 @@ export function TimelineCanvas() {
       g.attr('transform', next.toString());
       // Sync D3 internal __zoom directly (no event dispatch, no traversal)
       (svg.node() as any).__zoom = next;
-
-      // Accumulate velocity for momentum (reduced for less inertia)
-      _zoomVelocity = _zoomVelocity * 0.62 + (factor - 1) * 0.12;
-      _zoomRaf = requestAnimationFrame(applyZoomMomentum);
     }, { passive: false });
 
     // Store zoom reference for programmatic control

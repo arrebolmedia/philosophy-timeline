@@ -131,7 +131,7 @@ ssh root@data.arrebolweddings.com "cd /opt/timeline && git pull && docker compos
 
 | Versión | Fecha | Cambio |
 |---------|-------|--------|
-| 2.0.4 | 2026-05-15 | Performance zoom: conexiones ocultas durante el movimiento (display:none) y momentum reducido (decay 0.74, boost 0.12). |
+| 2.0.4 | 2026-05-15 | Performance zoom: eliminado el momentum del zoom (precisión > inercia) y conexiones ocultas mientras la rueda está activa (180ms tras último tick). Link de Deniz actualizado a /philo/. |
 | 2.0.3 | 2026-05-14 | Filósofos vivos: muestra "presente" en lugar de campo vacío en timeline, lista, detalle y OG. Stats sidebar dice "Edad" en vez de "Vivió" y calcula contra año actual. |
 | 2.0.2 | 2026-05-14 | Filename PNG descriptivo con chips activos. |
 | 2.0.1 | 2026-05-14 | Performance: drag/zoom fluidos en zoom alto (`__zoom` directo, GPU layers, `pointer-events:none` en conexiones). |

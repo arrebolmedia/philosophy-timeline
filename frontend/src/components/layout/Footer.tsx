@@ -7,7 +7,7 @@ export function Footer() {
         <p>
           Inspirado en el trabajo de{' '}
           <a
-            href="https://www.denizcemonduygu.com/portfolio/the-history-of-philosophy/"
+            href="https://www.denizcemonduygu.com/philo/"
             target="_blank"
             rel="noopener noreferrer"
             className="underline underline-offset-4 hover:text-gray-600 transition-colors"
