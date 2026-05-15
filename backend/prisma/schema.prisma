@@ -134,6 +134,11 @@ model Connection {
   sourcePages      String?  @map("source_pages") @db.VarChar(50)
   sourceUrl        String?  @map("source_url") @db.VarChar(500)
   confidence       Int      @default(3) // 1-5 scale: 1=speculative, 5=well-documented
+  // Audit system (added 2026-05-15): subtipo controlado + ciclo de auditoría
+  connectionSubtype String?  @map("connection_subtype") @db.VarChar(30)
+  auditStatus       String   @default("pending") @map("audit_status") @db.VarChar(20)
+  auditNotes        String?  @map("audit_notes") @db.Text
+  auditedAt         DateTime? @map("audited_at")
   createdAt        DateTime @default(now()) @map("created_at")
 
   statementFrom Statement @relation("ConnectionFrom", fields: [statementFromId], references: [id], onDelete: Cascade)
@@ -142,6 +147,8 @@ model Connection {
   @@index([statementFromId])
   @@index([statementToId])
   @@index([connectionType])
+  @@index([connectionSubtype])
+  @@index([auditStatus])
   @@map("connections")
 }
 

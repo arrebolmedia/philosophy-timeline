@@ -247,6 +247,30 @@ router.delete('/connections/:id', async (req, res) => {
   }
 });
 
+// Get connections by philosopher (auditoría por filósofo, opción 3)
+router.get('/connections/by-philosopher/:philosopherId', async (req, res) => {
+  try {
+    const philosopherId = parseInt(req.params.philosopherId);
+    const connections = await prisma.connection.findMany({
+      where: {
+        OR: [
+          { statementFrom: { philosopherId } },
+          { statementTo: { philosopherId } }
+        ]
+      },
+      include: {
+        statementFrom: { include: { philosopher: { select: { id: true, name: true, slug: true, birthYear: true } } } },
+        statementTo: { include: { philosopher: { select: { id: true, name: true, slug: true, birthYear: true } } } }
+      },
+      orderBy: [{ auditStatus: 'asc' }, { id: 'asc' }]
+    });
+    res.json(connections);
+  } catch (error) {
+    console.error('Error fetching connections by philosopher:', error);
+    res.status(500).json({ error: 'Failed to fetch connections' });
+  }
+});
+
 // ============================================
 // HELPER ENDPOINTS
 // ============================================

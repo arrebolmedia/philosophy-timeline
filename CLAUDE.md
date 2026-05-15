@@ -89,11 +89,19 @@ Tabla por tema, esperar aprobación explícita antes de insertar.
    - Cross-period sin cadena documental → solo `convergencia` u `oposicion_reconstruida`
 
 5. **Estados de auditoría:**
-   - `pending`: conexión histórica sin revisar (las 723 originales arrancan así)
+   - `pending`: conexión histórica sin revisar (las 699 originales arrancan así)
    - `validated`: pasa los tests + subtipo asignado
    - `recalificada`: cambió tipo/subtipo durante revisión
-   - `marcada_debil`: se mantiene visible con confidence bajo
+   - `marcada_debil`: se mantiene visible con confidence bajo (uso humano, no automático)
    - `rechazada`: filtrada del render público (no se borra)
+
+6. **Auditoría histórica (699 pending):**
+   El triaje automático SQL no aplica: las conexiones históricas tienen
+   confidence ≥ 3 y explicaciones largas, no hay señal objetiva de debilidad.
+   El **gap temporal NO es indicador de debilidad** — las cross-period son
+   filosóficamente las más interesantes (Heráclito-Hegel, Sócrates-Wittgenstein).
+   La revisión es **humana por cluster temático** (presocráticos, eleatas,
+   sofistas, platonismo, etc.) aplicando los 4 (5) tests por conexión.
 
 Ver progreso: `SELECT * FROM v_connections_audit_report;`
 
@@ -162,6 +170,7 @@ ssh root@data.arrebolweddings.com "cd /opt/timeline && git pull && docker compos
 
 | Versión | Fecha | Cambio |
 |---------|-------|--------|
+| 2.1.0 | 2026-05-15 | Sistema riguroso de auditoría de conexiones: 13 subtipos en 2 familias, 4 tests obligatorios, schema DB (`connection_subtype`, `audit_status`, `audit_notes`, `audited_at` + CHECK + vista de reporte), admin UI rediseñada con filtros por subtipo/estado/filósofo y form de auditoría inline. Endpoint nuevo `/api/admin/connections/by-philosopher/:id`. |
 | 2.0.5 | 2026-05-15 | Performance zoom/drag: removidos GPU hints contraproducentes (`will-change`, `translateZ(0)`) que saturaban el compositor con 1500 nodos SVG; sin momentum en zoom (precisión); inercia del drag acortada (decay 0.74, boost 0.12). Link de Deniz a /philo/. |
 | 2.0.3 | 2026-05-14 | Filósofos vivos: "presente" en lugar de NULL. Stats sidebar muestra "Edad" calculada contra año actual cuando vive. |
 | 2.0.2 | 2026-05-14 | Filename PNG descriptivo con chips activos. |
