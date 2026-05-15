@@ -7,12 +7,12 @@ Infra en Docker + Traefik en `data.arrebolweddings.com` (8GB).
 
 ## Estado actual
 
-| Tabla | Último ID |
-|-------|-----------|
-| philosophers | #178 (Enesidemo) |
-| statements | #434 |
-| connections | #776 |
-| tags | #79 |
+| Tabla | Total | Último ID |
+|-------|-------|-----------|
+| philosophers | 150 | #178 (Enesidemo) |
+| statements | 406 | #434 |
+| connections | 724 | #776 |
+| tags | 79 | #79 |
 
 **Módulos:** M1–M22 procesados. Próximo M23.
 **Versión:** 2.0.5
