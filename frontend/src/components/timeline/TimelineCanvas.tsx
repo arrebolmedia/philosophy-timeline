@@ -225,10 +225,12 @@ export function TimelineCanvas() {
     let _zoomCy = 0;
 
     const applyZoomMomentum = () => {
-      _zoomVelocity *= 0.88;
-      if (Math.abs(_zoomVelocity) < 0.0003) {
+      _zoomVelocity *= 0.74;
+      if (Math.abs(_zoomVelocity) < 0.0007) {
         // Sync D3 zoom state once at the end (not per-frame)
         svg.call(zoom.transform as any, prevTransformRef.current);
+        // Show connections again after zoom settles
+        svg.select('g.connections').style('display', '');
         return;
       }
       const cur = prevTransformRef.current;
@@ -257,6 +259,9 @@ export function TimelineCanvas() {
       cancelAnimationFrame(_zoomRaf);
       clearTimeout(_zoomDebounce);
 
+      // Hide connections during zoom — they're the most expensive to render
+      svg.select('g.connections').style('display', 'none');
+
       _zoomCx = e.offsetX;
       _zoomCy = e.offsetY;
 
@@ -281,8 +286,8 @@ export function TimelineCanvas() {
       // Sync D3 internal __zoom directly (no event dispatch, no traversal)
       (svg.node() as any).__zoom = next;
 
-      // Accumulate velocity for momentum
-      _zoomVelocity = _zoomVelocity * 0.7 + (factor - 1) * 0.3;
+      // Accumulate velocity for momentum (reduced for less inertia)
+      _zoomVelocity = _zoomVelocity * 0.62 + (factor - 1) * 0.12;
       _zoomRaf = requestAnimationFrame(applyZoomMomentum);
     }, { passive: false });
 
