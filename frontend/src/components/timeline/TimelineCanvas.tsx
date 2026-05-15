@@ -201,26 +201,17 @@ export function TimelineCanvas() {
        .style('user-select', 'none')
        .style('-webkit-user-select', 'none')
        .style('-moz-user-select', 'none')
-       .style('-ms-user-select', 'none')
-       .style('transform', 'translateZ(0)') // promote SVG itself to GPU layer
-       .style('will-change', 'transform');
+       .style('-ms-user-select', 'none');
 
-    // Create main group for zoom/pan transformations.
-    // GPU hints: promote to its own compositor layer so transform animations are cheap.
+    // Create main group for zoom/pan transformations (no GPU hints — test).
     const g = svg.append('g')
-      .attr('class', 'main-group')
-      .style('will-change', 'transform')
-      .style('transform-origin', '0 0')
-      .style('backface-visibility', 'hidden');
+      .attr('class', 'main-group');
 
     // Diagonal axis direction (matches layout ANGLE = 40°)
     const _diagCos = Math.cos(40 * Math.PI / 180);
     const _diagSin = Math.sin(40 * Math.PI / 180);
 
     // Wheel zoom — instant, no momentum (precision tool, not surface emulation)
-    // Hide connections during wheel activity to avoid expensive reflows per tick
-    let _zoomConnTimer: any = 0;
-
     const zoom = d3.zoom<SVGSVGElement, unknown>()
       .scaleExtent([0.1, 4])
       .filter(() => false)  // disable all D3 zoom input — handled manually below
@@ -228,14 +219,6 @@ export function TimelineCanvas() {
 
     svg.node()!.addEventListener('wheel', (e: WheelEvent) => {
       e.preventDefault();
-
-      // Hide connections while wheel is active; restore after pause
-      const conns = svg.select('g.connections');
-      conns.style('display', 'none');
-      clearTimeout(_zoomConnTimer);
-      _zoomConnTimer = setTimeout(() => {
-        conns.style('display', '');
-      }, 180);
 
       const cx = e.offsetX;
       const cy = e.offsetY;
@@ -297,23 +280,17 @@ export function TimelineCanvas() {
           .scale(t.k);
         prevTransformRef.current = newTransform;
         g.attr('transform', newTransform.toString());
-        // Direct __zoom sync (no event dispatch, no DOM traversal)
         (svg.node() as any).__zoom = newTransform;
         (svg.node() as any).__lastZoomTime = Date.now();
       })
       .on('end', () => {
-        // Sync D3 zoom state once at end of drag
-        svg.call(zoom.transform as any, prevTransformRef.current);
         // Momentum
-        let velocity = _lastScalar - _prevScalar;
+        let velocity = (_lastScalar - _prevScalar) * 0.6;
         if (Math.abs(velocity) < 0.5) return;
-        const decay = 0.92;
+        const decay = 0.82;
         const applyMomentum = () => {
           velocity *= decay;
-          if (Math.abs(velocity) < 0.3) {
-            svg.call(zoom.transform as any, prevTransformRef.current);
-            return;
-          }
+          if (Math.abs(velocity) < 0.5) return;
           const cur = prevTransformRef.current;
           const newTransform = d3.zoomIdentity
             .translate(cur.x + velocity * _diagCos, cur.y + velocity * _diagSin)
