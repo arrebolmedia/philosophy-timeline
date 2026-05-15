@@ -53,8 +53,8 @@ export default function StatementsAdmin() {
   const fetchData = async () => {
     try {
       const [stmtRes, philoRes] = await Promise.all([
-        fetch(`${apiUrl}/api/statements`),
-        fetch(`${apiUrl}/api/philosophers`)
+        fetch(`${apiUrl}/api/admin/statements`),
+        fetch(`${apiUrl}/api/admin/philosophers`)
       ]);
       const stmtData = await stmtRes.json();
       const philoData = await philoRes.json();

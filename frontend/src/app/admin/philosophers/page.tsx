@@ -42,7 +42,7 @@ export default function PhilosophersAdmin() {
 
   const fetchPhilosophers = async () => {
     try {
-      const res = await fetch(`${apiUrl}/api/philosophers`);
+      const res = await fetch(`${apiUrl}/api/admin/philosophers`);
       const json = await res.json();
       setPhilosophers(json.data || json);
     } catch (error) {
