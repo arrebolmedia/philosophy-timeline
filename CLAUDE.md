@@ -60,11 +60,42 @@ Tabla por tema, esperar aprobación explícita antes de insertar.
 - `difficulty_level`: 1–5
 - `category_id`: ver "Taxonomía"
 
-**Conexiones:**
-- Solo entre filósofos distintos (trigger `trg_no_same_philosopher`)
-- `connection_type`: `resonate` o `oppose`
-- `strength` y `confidence`: 1–5
-- Explicación de 1–2 frases
+**Conexiones (proceso riguroso desde 2026-05-15):**
+
+1. **Descubrimiento de candidatos** (3 queries automáticas):
+   - Q1: mismos tags conceptuales
+   - Q2: misma categoría, cross-period
+   - Q3: keywords del problema (3-5 manuales)
+   Presentar candidatos al usuario para que seleccione.
+
+2. **Evaluación con 4 (5) tests:**
+   - **Test 1 — Objeto:** ¿comparten el mismo problema, no solo una palabra?
+   - **Test 2 — Contacto:** documentado / plausible / sin contacto
+   - **Test 5 — Cross-period (gap ≥ 200 años):** 5a tesis identificable, 5b cadena documental, 5c consenso académico
+   - **Test 3 — Naturaleza:** asigna subtipo según pregunta clave de 3b
+   - **Test 4 — Fuente:** primaria → confidence 4-5, secundaria estándar → 3-4, lectura propia → ≤2
+
+3. **Tipología (13 subtipos en 2 familias, validados por CHECK constraint):**
+   - `resonate`: cita_directa, discipulado, desarrollo, respuesta, influencia, convergencia
+   - `oppose`: refutacion, critica, inversion, superacion, deconstruccion, contraste_doctrinal, oposicion_reconstruida
+
+4. **Reglas técnicas:**
+   - Solo entre filósofos distintos (trigger `trg_no_same_philosopher`)
+   - `connection_type` (familia) + `connection_subtype` (tipo específico)
+   - `strength` (centralidad de la tesis) y `confidence` (solidez de la evidencia): 1-5
+   - Toda conexión nueva entra con `audit_status = 'validated'`
+   - Si confidence ≥ 3, llenar `source_title` y `source_author`
+   - Subtipos "fuertes" (cita_directa, discipulado, refutacion, inversion, superacion, deconstruccion) requieren contacto documentado; degradar si no hay
+   - Cross-period sin cadena documental → solo `convergencia` u `oposicion_reconstruida`
+
+5. **Estados de auditoría:**
+   - `pending`: conexión histórica sin revisar (las 723 originales arrancan así)
+   - `validated`: pasa los tests + subtipo asignado
+   - `recalificada`: cambió tipo/subtipo durante revisión
+   - `marcada_debil`: se mantiene visible con confidence bajo
+   - `rechazada`: filtrada del render público (no se borra)
+
+Ver progreso: `SELECT * FROM v_connections_audit_report;`
 
 ### 4. Sync a producción
 
