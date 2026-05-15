@@ -10,16 +10,11 @@ export const authOptions: NextAuthOptions = {
         password: { label: "Password", type: "password" }
       },
       async authorize(credentials) {
-        // Credenciales hardcodeadas para el admin
-        if (
-          credentials?.email === 'admin@anthonycazares.cafe' &&
-          credentials?.password === 'Lalo9513.-'
-        ) {
-          return {
-            id: '1',
-            email: 'admin@anthonycazares.cafe',
-            name: 'Admin',
-          };
+        const adminEmail = process.env.ADMIN_EMAIL;
+        const adminPassword = process.env.ADMIN_PASSWORD;
+        if (!adminEmail || !adminPassword) return null;
+        if (credentials?.email === adminEmail && credentials?.password === adminPassword) {
+          return { id: '1', email: adminEmail, name: 'Admin' };
         }
         return null;
       }
