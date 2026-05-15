@@ -87,6 +87,7 @@ model Philosopher {
   @@map("philosophers")
 }
 
+// Logical characterization fields (added 2026-05-15) live on this model — see schema below.
 model Statement {
   id               Int      @id @default(autoincrement())
   philosopherId    Int      @map("philosopher_id")
@@ -101,6 +102,14 @@ model Statement {
   yPosition        Decimal? @map("y_position") @db.Decimal(10, 2)
   difficultyLevel  Int      @default(1) @map("difficulty_level")
   popularityScore  Int      @default(0) @map("popularity_score")
+  // Logical characterization (added 2026-05-15) — alimenta el sistema de matching de conexiones
+  claimType                  String?  @map("claim_type") @db.VarChar(20)
+  claimScope                 String?  @map("claim_scope") @db.VarChar(15)
+  respectsIdentity           String?  @map("respects_identity") @db.VarChar(10)
+  respectsNoncontradiction   String?  @map("respects_noncontradiction") @db.VarChar(10)
+  respectsExcludedMiddle     String?  @map("respects_excluded_middle") @db.VarChar(10)
+  respectsSufficientReason   String?  @map("respects_sufficient_reason") @db.VarChar(10)
+  logicalNotes               String?  @map("logical_notes") @db.Text
   createdAt        DateTime @default(now()) @map("created_at")
   updatedAt        DateTime @updatedAt @map("updated_at")
 
@@ -114,6 +123,8 @@ model Statement {
   @@index([philosopherId])
   @@index([categoryId])
   @@index([orderInTimeline])
+  @@index([claimType])
+  @@index([claimScope])
   @@map("statements")
 }
 

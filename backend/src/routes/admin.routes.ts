@@ -247,6 +247,19 @@ router.delete('/connections/:id', async (req, res) => {
   }
 });
 
+// Get logical-match candidates for a statement (sistema de matching formal)
+router.get('/statements/:id/candidates', async (req, res) => {
+  try {
+    const { findCandidatesFor } = await import('../services/connections/candidateFinder');
+    const result = await findCandidatesFor(parseInt(req.params.id));
+    res.json(result);
+  } catch (error: any) {
+    console.error('Error finding candidates:', error);
+    res.status(error.message?.includes('no encontrado') ? 404 : 500)
+      .json({ error: error.message || 'Failed to find candidates' });
+  }
+});
+
 // Get connections by philosopher (auditoría por filósofo, opción 3)
 router.get('/connections/by-philosopher/:philosopherId', async (req, res) => {
   try {
