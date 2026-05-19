@@ -553,7 +553,7 @@ export function TimelineCanvas() {
       });
 
     // Statement text (longer, single line)
-    stmtNodes.append('text').attr('class', 'stmt-text').attr('x', 0).attr('y', 0).text((d: any) => truncate(d.text, 200))
+    stmtNodes.append('text').attr('class', 'stmt-text').attr('x', 0).attr('y', 0).text((d: any) => truncate(d.text, 250))
       .style('font-size', '11px').style('fill', '#222');
 
     // Tags inline, smaller
