@@ -211,6 +211,7 @@ model StatementReference {
   statementId  Int     @map("statement_id")
   referenceId  Int     @map("reference_id")
   pageSpecific String? @map("page_specific") @db.VarChar(20)
+  urlSpecific  String? @map("url_specific") @db.VarChar(500)
 
   statement Statement @relation(fields: [statementId], references: [id], onDelete: Cascade)
   reference Reference @relation(fields: [referenceId], references: [id], onDelete: Cascade)

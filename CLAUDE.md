@@ -105,6 +105,23 @@ Tabla por tema, esperar aprobación explícita antes de insertar.
 
 Ver progreso: `SELECT * FROM v_connections_audit_report;`
 
+### Jerarquía de fuentes (orden de rigor decreciente)
+
+**Nivel 1** — Texto primario del filósofo (cuando existe digitalizado: Perseus, MIT Classics, Gutenberg, Adam-Tannery, etc.)
+**Nivel 2** — Fragmentos doxográficos antiguos (Simplicio, Diógenes Laercio, Sexto Empírico, Plutarco, Hipólito). Identificados por códigos **DK** (Diels-Kranz) o **LM** (Laks-Most 2016).
+**Nivel 3** — Enciclopedias filosóficas: **SEP** (más estricta) e **IEP** (más entradas individuales, especialmente presocráticos).
+**Nivel 4** — Ediciones críticas: DK, LM, KRS (Kirk-Raven-Schofield), OCT (Oxford Classical Texts), AT (Adam-Tannery), GA (Gesamtausgabe Heidegger).
+**Nivel 5** — Manuales: Copleston, Reale-Antiseri, Hirschberger, Guthrie.
+**Nivel 6** — Estudios académicos sobre el autor (para interpretación matizada).
+
+**Descartadas como cita formal:** Wikipedia (solo pointer informal), blogs no peer-reviewed, YouTube/podcasts, IA.
+
+**Aplicación a los campos:**
+- `references.title/author` = la **obra** (Nivel 1 o 2)
+- `statement_references.page_specific` = localización canónica (Bekker, Stephanus, DK/LM, AT, A/B Kant)
+- `statement_references.url_specific` = texto primario en línea si existe; si no, entrada propia del filósofo en SEP/IEP como pointer académico
+- `audit_notes` = atribuciones discutidas (ej. "Aristóteles surmises..."), conflictos entre fuentes
+
 ### 4. Sync a producción
 
 ⚠️ **Nunca usar heredoc de PowerShell con UTF-8** (tildes/ñ se corrompen en SSH).

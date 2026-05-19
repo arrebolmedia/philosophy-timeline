@@ -378,6 +378,11 @@ router.get('/timeline', async (req: Request, res: Response) => {
           }
         },
         category: true,
+        references: {
+          include: {
+            reference: true
+          }
+        },
         connectionsFrom: {
           include: {
             statementTo: true

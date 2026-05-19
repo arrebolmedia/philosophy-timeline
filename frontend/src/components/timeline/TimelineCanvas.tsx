@@ -52,6 +52,18 @@ export function TimelineCanvas() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [tooltip, setTooltip] = useState<{ x: number; y: number; content: string } | null>(null);
+  const [refTooltip, setRefTooltip] = useState<{ x: number; y: number; title: string; author: string; pageSpecific: string; url: string | null } | null>(null);
+  const refTooltipTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const scheduleRefTooltipClose = useCallback(() => {
+    if (refTooltipTimerRef.current) clearTimeout(refTooltipTimerRef.current);
+    refTooltipTimerRef.current = setTimeout(() => setRefTooltip(null), 250);
+  }, []);
+  const cancelRefTooltipClose = useCallback(() => {
+    if (refTooltipTimerRef.current) {
+      clearTimeout(refTooltipTimerRef.current);
+      refTooltipTimerRef.current = null;
+    }
+  }, []);
   const [highlightId, setHighlightId] = useState<number | null>(null);
   const [hoveredPhilosopher, setHoveredPhilosopher] = useState<number | null>(null);
   const [hoveredStatement, setHoveredStatement] = useState<number | null>(null);
@@ -535,15 +547,17 @@ export function TimelineCanvas() {
       .attr('class', 'statement')
       .attr('transform', (d: any) => `translate(${d.x}, ${d.y})`)
       .style('cursor', 'pointer')
-      .on('mouseenter', (event, d: any) => {
+      .on('mouseenter', function(event, d: any) {
         if (!filterActiveRef.current) {
           setHoveredStatement(d.id);
         }
+        d3.select(this).select('.stmt-ref-icon').transition().duration(150).style('opacity', 1);
       })
-      .on('mouseleave', () => {
+      .on('mouseleave', function() {
         if (!filterActiveRef.current) {
           setHoveredStatement(null);
         }
+        d3.select(this).select('.stmt-ref-icon').transition().duration(150).style('opacity', 0);
       })
       .on('click', (event, d: any) => {
         event.stopPropagation();
@@ -555,6 +569,65 @@ export function TimelineCanvas() {
     // Statement text (longer, single line)
     stmtNodes.append('text').attr('class', 'stmt-text').attr('x', 0).attr('y', 0).text((d: any) => truncate(d.text, 250))
       .style('font-size', '11px').style('fill', '#222');
+
+    // Reference icon (book) — only for statements with a reference
+    stmtNodes.filter((d: any) => Array.isArray(d.references) && d.references.length > 0)
+      .each(function(d: any) {
+        const node = d3.select(this);
+        const textEl = node.select<SVGTextElement>('text.stmt-text').node();
+        const textWidth = textEl ? textEl.getBBox().width : 200;
+        const iconG = node.append('g')
+          .attr('class', 'stmt-ref-icon')
+          .attr('transform', `translate(${textWidth + 4}, -12)`)
+          .style('opacity', 0)
+          .style('cursor', 'pointer')
+          .style('pointer-events', 'all');
+        // Lucide BookOpen icon, scaled to 12px (viewBox 24x24 → scale 0.5)
+        const iconSvg = iconG.append('g').attr('transform', 'scale(0.5)');
+        iconSvg.append('path')
+          .attr('d', 'M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z')
+          .attr('fill', 'none')
+          .attr('stroke', '#666')
+          .attr('stroke-width', 2)
+          .attr('stroke-linecap', 'round')
+          .attr('stroke-linejoin', 'round');
+        iconSvg.append('path')
+          .attr('d', 'M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z')
+          .attr('fill', 'none')
+          .attr('stroke', '#666')
+          .attr('stroke-width', 2)
+          .attr('stroke-linecap', 'round')
+          .attr('stroke-linejoin', 'round');
+        // Larger invisible hit area
+        iconG.append('rect')
+          .attr('x', -2).attr('y', -2).attr('width', 16).attr('height', 16)
+          .attr('fill', 'transparent');
+        // Hover state — darken the icon
+        iconG
+          .on('mouseover.style', () => iconSvg.selectAll('path').attr('stroke', '#222'))
+          .on('mouseout.style', () => iconSvg.selectAll('path').attr('stroke', '#666'));
+        iconG
+          .on('mouseenter', (event) => {
+            cancelRefTooltipClose();
+            const ref = d.references[0]?.reference;
+            if (!ref) return;
+            const url = d.references[0]?.urlSpecific || ref.url || null;
+            setRefTooltip({
+              x: event.clientX,
+              y: event.clientY,
+              title: ref.title || '',
+              author: ref.author || '',
+              pageSpecific: d.references[0]?.pageSpecific || '',
+              url,
+            });
+          })
+          .on('mouseleave', () => scheduleRefTooltipClose())
+          .on('click', (event) => {
+            event.stopPropagation();
+            const url = d.references[0]?.urlSpecific || d.references[0]?.reference?.url;
+            if (url) window.open(url, '_blank', 'noopener,noreferrer');
+          });
+      });
 
     // Tags inline, smaller
     stmtNodes.append('text').attr('x', 0).attr('y', -14).text((d: any) => ((d.tags || []).slice(0,2).map((t:any)=>t.tag?.name||t).join(', ')))
@@ -1723,6 +1796,31 @@ export function TimelineCanvas() {
         {tooltip && (
           <div className="fixed z-50 p-3 bg-white border rounded shadow pointer-events-none" style={{ left: tooltip.x + 8, top: tooltip.y + 8 }}>
             <div className="text-sm">{tooltip.content}</div>
+          </div>
+        )}
+
+        {refTooltip && (
+          <div
+            className={`fixed z-50 p-3 bg-white border border-gray-300 rounded shadow-lg max-w-xs ${refTooltip.url ? 'cursor-pointer hover:border-blue-400' : ''}`}
+            style={{
+              left: refTooltip.x,
+              top: refTooltip.y - 12,
+              transform: 'translate(-50%, -100%)',
+            }}
+            onMouseEnter={cancelRefTooltipClose}
+            onMouseLeave={scheduleRefTooltipClose}
+            onClick={() => {
+              if (refTooltip.url) {
+                window.open(refTooltip.url, '_blank', 'noopener,noreferrer');
+                setRefTooltip(null);
+              }
+            }}
+          >
+            <div className="text-xs font-semibold text-gray-900">{refTooltip.title}</div>
+            <div className="text-xs text-gray-700 mt-0.5">{refTooltip.author}</div>
+            {refTooltip.pageSpecific && (
+              <div className="text-xs text-gray-500 mt-0.5 font-mono">{refTooltip.pageSpecific}</div>
+            )}
           </div>
         )}
       </div>
