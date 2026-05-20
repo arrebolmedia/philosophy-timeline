@@ -551,7 +551,15 @@ export function TimelineCanvas() {
         if (!filterActiveRef.current) {
           setHoveredStatement(d.id);
         }
-        d3.select(this).select('.stmt-ref-icon').transition().duration(150).style('opacity', 1);
+        const node = d3.select(this);
+        const iconG = node.select<SVGGElement>('.stmt-ref-icon');
+        if (!iconG.empty()) {
+          const textEl = node.select<SVGTextElement>('text.stmt-text').node();
+          let textWidth = 200;
+          try { if (textEl) textWidth = textEl.getBBox().width; } catch { /* skip */ }
+          iconG.attr('transform', `translate(${textWidth + 4}, -12)`);
+        }
+        iconG.transition().duration(150).style('opacity', 1);
       })
       .on('mouseleave', function() {
         if (!filterActiveRef.current) {
