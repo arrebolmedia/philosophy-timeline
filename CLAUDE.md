@@ -10,14 +10,14 @@ Infra en Docker + Traefik en `data.arrebolweddings.com` (8GB).
 | Tabla | Total | Último ID |
 |-------|-------|-----------|
 | philosophers | 150 | #178 (Enesidemo) |
-| statements | 420 | #450 |
-| connections | 780 | #832 |
+| statements | 427 | #457 |
+| connections | 808 | #860 |
 | tags | 79 | #79 |
-| references | 221 | — |
+| references | 222 | — |
 
-**Módulos:** M1–M22 procesados (M22 cerrado con T4-T5: Racionalismo y Empirismo). Próximo M23.
+**Módulos:** M1–M22 procesados (M22 cerrado con T4-T6: Racionalismo, Empirismo e Idealismo). Próximo M23.
 **Auditoría:** 0 pending — toda la timeline auditada con tipología completa.
-**Versión:** 2.1.4
+**Versión:** 2.1.5
 
 ---
 
