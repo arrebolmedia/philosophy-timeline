@@ -9,15 +9,15 @@ Infra en Docker + Traefik en `data.arrebolweddings.com` (8GB).
 
 | Tabla | Total | Último ID |
 |-------|-------|-----------|
-| philosophers | 152 | #180 (Pardo) |
-| statements | 432 | #462 |
-| connections | 828 | #880 |
+| philosophers | 156 | #184 (Wollstonecraft) |
+| statements | 440 | #470 |
+| connections | 854 | #906 |
 | tags | 79 | #79 |
-| references | 224 | — |
+| references | 228 | — |
 
-**Módulos:** M1–M22 procesados. M22 cerrado completo (T1–T7: Introducción, Historia, Escepticismo, Racionalismo, Empirismo, Idealismo, Realismo). Próximo M23.
+**Módulos:** M22 cerrado completo. M16 auditado (Historia Filosofía Moderna) — Calvino, Campanella, Kuhn, Wollstonecraft añadidos; Descartes/Malebranche/Locke ampliados. Próximo: M13 (Metafísica).
 **Auditoría:** 0 pending — toda la timeline auditada con tipología completa.
-**Versión:** 2.1.6
+**Versión:** 2.1.7
 
 ---
 
