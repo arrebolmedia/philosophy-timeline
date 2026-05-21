@@ -9,15 +9,15 @@ Infra en Docker + Traefik en `data.arrebolweddings.com` (8GB).
 
 | Tabla | Total | Último ID |
 |-------|-------|-----------|
-| philosophers | 158 | #186 (Vattimo) |
-| statements | 446 | #476 |
-| connections | 875 | #927 |
+| philosophers | 161 | #189 (Mill) |
+| statements | 452 | #482 |
+| connections | 889 | #941 |
 | tags | 79 | #79 |
-| references | 230 | — |
+| references | 234 | — |
 
-**Módulos:** M22, M16, M13 auditados (Suárez, Vattimo añadidos; hilemorfismo, orden inverso del conocer, 4 cambios, Ipsum Esse explícitos). Próximo: M20 (Metafísica II) o M14 (Ética General).
+**Módulos:** M22, M16, M13, M14 auditados (Suárez, Vattimo, Hildebrand, Bentham, Mill añadidos; sindéresis, lex iniusta, Wertantwort, cálculo hedónico, moral abierta/cerrada explícitos). Próximo: M20 (Metafísica II) o M15.
 **Auditoría:** 0 pending — toda la timeline auditada con tipología completa.
-**Versión:** 2.1.8
+**Versión:** 2.1.9
 
 ---
 
