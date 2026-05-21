@@ -9,15 +9,15 @@ Infra en Docker + Traefik en `data.arrebolweddings.com` (8GB).
 
 | Tabla | Total | Último ID |
 |-------|-------|-----------|
-| philosophers | 156 | #184 (Wollstonecraft) |
-| statements | 440 | #470 |
-| connections | 854 | #906 |
+| philosophers | 158 | #186 (Vattimo) |
+| statements | 446 | #476 |
+| connections | 875 | #927 |
 | tags | 79 | #79 |
-| references | 228 | — |
+| references | 230 | — |
 
-**Módulos:** M22 cerrado completo. M16 auditado (Historia Filosofía Moderna) — Calvino, Campanella, Kuhn, Wollstonecraft añadidos; Descartes/Malebranche/Locke ampliados. Próximo: M13 (Metafísica).
+**Módulos:** M22, M16, M13 auditados (Suárez, Vattimo añadidos; hilemorfismo, orden inverso del conocer, 4 cambios, Ipsum Esse explícitos). Próximo: M20 (Metafísica II) o M14 (Ética General).
 **Auditoría:** 0 pending — toda la timeline auditada con tipología completa.
-**Versión:** 2.1.7
+**Versión:** 2.1.8
 
 ---
 
