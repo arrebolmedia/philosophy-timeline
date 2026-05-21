@@ -9,15 +9,15 @@ Infra en Docker + Traefik en `data.arrebolweddings.com` (8GB).
 
 | Tabla | Total | Último ID |
 |-------|-------|-----------|
-| philosophers | 162 | #190 (Mounier) |
-| statements | 458 | #488 |
-| connections | 907 | #959 |
+| philosophers | 164 | #192 (Sartori) |
+| statements | 462 | #492 |
+| connections | 920 | #972 |
 | tags | 79 | #79 |
-| references | 237 | — |
+| references | 240 | — |
 
-**Módulos:** M22, M16, M13, M14, M15 auditados (Mounier añadido; Wittgenstein muerte, Marcel mi cuerpo, Damasio marcador somático, Wojtyła persona-acción, Zubiri actos definitorios explícitos). Próximo: M20 (Metafísica II) o M21.
+**Módulos:** M22, M16, M13, M14, M15, M12 auditados (Polibio, Sartori añadidos; anaciclosis, homo videns, régimen mixto tomista, inducción histórica maquiaveliana explícitos). Próximo: M20 (Metafísica II) o M21.
 **Auditoría:** 0 pending — toda la timeline auditada con tipología completa.
-**Versión:** 2.1.10
+**Versión:** 2.1.11
 
 ---
 
