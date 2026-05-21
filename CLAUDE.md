@@ -9,15 +9,15 @@ Infra en Docker + Traefik en `data.arrebolweddings.com` (8GB).
 
 | Tabla | Total | Último ID |
 |-------|-------|-----------|
-| philosophers | 164 | #192 (Sartori) |
-| statements | 462 | #492 |
-| connections | 920 | #972 |
+| philosophers | 177 | #206 (Pieper) |
+| statements | 484 | #515 |
+| connections | 982 | #1134 |
 | tags | 79 | #79 |
-| references | 240 | — |
+| references | 254 | — |
 
-**Módulos:** M22, M16, M13, M14, M15, M12 auditados (Polibio, Sartori añadidos; anaciclosis, homo videns, régimen mixto tomista, inducción histórica maquiaveliana explícitos). Próximo: M20 (Metafísica II) o M21.
+**Módulos auditados:** M1, M2, M4, M7, M8, M9, M10, M12, M13, M14, M15, M16, M18, M19, M20, M21, M22 (17 de los 19 doctrinales). Pendientes: M3 (técnicas de investigación) y M6 (redacción) — no doctrinales. Lingüísticos saltados: M5, M11, M17.
 **Auditoría:** 0 pending — toda la timeline auditada con tipología completa.
-**Versión:** 2.1.11
+**Versión:** 2.1.12
 
 ---
 
