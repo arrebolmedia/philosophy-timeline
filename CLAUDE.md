@@ -17,7 +17,7 @@ Infra en Docker + Traefik en `data.arrebolweddings.com` (8GB).
 
 **Módulos auditados:** M1, M2, M4, M7, M8, M9, M10, M12, M13, M14, M15, M16, M18, M19, M20, M21, M22 (17 de los 19 doctrinales). Pendientes: M3 (técnicas de investigación) y M6 (redacción) — no doctrinales. Lingüísticos saltados: M5, M11, M17.
 **Auditoría:** 0 pending — toda la timeline auditada con tipología completa.
-**Versión:** 2.1.14
+**Versión:** 2.1.15
 
 ---
 
