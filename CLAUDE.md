@@ -9,15 +9,15 @@ Infra en Docker + Traefik en `data.arrebolweddings.com` (8GB).
 
 | Tabla | Total | Último ID |
 |-------|-------|-----------|
-| philosophers | 161 | #189 (Mill) |
-| statements | 452 | #482 |
-| connections | 889 | #941 |
+| philosophers | 162 | #190 (Mounier) |
+| statements | 458 | #488 |
+| connections | 907 | #959 |
 | tags | 79 | #79 |
-| references | 234 | — |
+| references | 237 | — |
 
-**Módulos:** M22, M16, M13, M14 auditados (Suárez, Vattimo, Hildebrand, Bentham, Mill añadidos; sindéresis, lex iniusta, Wertantwort, cálculo hedónico, moral abierta/cerrada explícitos). Próximo: M20 (Metafísica II) o M15.
+**Módulos:** M22, M16, M13, M14, M15 auditados (Mounier añadido; Wittgenstein muerte, Marcel mi cuerpo, Damasio marcador somático, Wojtyła persona-acción, Zubiri actos definitorios explícitos). Próximo: M20 (Metafísica II) o M21.
 **Auditoría:** 0 pending — toda la timeline auditada con tipología completa.
-**Versión:** 2.1.9
+**Versión:** 2.1.10
 
 ---
 
