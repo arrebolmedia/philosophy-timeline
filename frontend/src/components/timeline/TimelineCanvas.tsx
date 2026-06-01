@@ -262,30 +262,22 @@ export function TimelineCanvas() {
     // Apply zoom behavior to SVG
     svg.call(zoom);
 
-    // Diagonal drag with momentum
+    // Diagonal drag — instant, no momentum (precision tool)
     let _dragStartX = 0;
     let _dragStartY = 0;
     let _dragStartTransform = prevTransformRef.current;
-    let _lastScalar = 0;
-    let _prevScalar = 0;
-    let _momentumRaf = 0;
 
     const drag = d3.drag<SVGSVGElement, unknown>()
       .on('start', (event) => {
-        cancelAnimationFrame(_momentumRaf);
         _dragStartX = event.x;
         _dragStartY = event.y;
         _dragStartTransform = prevTransformRef.current;
-        _lastScalar = 0;
-        _prevScalar = 0;
         (svg.node() as any).__lastZoomTime = Date.now();
       })
       .on('drag', (event) => {
         const dx = event.x - _dragStartX;
         const dy = event.y - _dragStartY;
         const scalar = dx * _diagCos + dy * _diagSin;
-        _prevScalar = _lastScalar;
-        _lastScalar = scalar;
         const t = _dragStartTransform;
         const newTransform = d3.zoomIdentity
           .translate(t.x + scalar * _diagCos, t.y + scalar * _diagSin)
@@ -294,25 +286,6 @@ export function TimelineCanvas() {
         g.attr('transform', newTransform.toString());
         (svg.node() as any).__zoom = newTransform;
         (svg.node() as any).__lastZoomTime = Date.now();
-      })
-      .on('end', () => {
-        // Momentum
-        let velocity = (_lastScalar - _prevScalar) * 0.6;
-        if (Math.abs(velocity) < 0.5) return;
-        const decay = 0.82;
-        const applyMomentum = () => {
-          velocity *= decay;
-          if (Math.abs(velocity) < 0.5) return;
-          const cur = prevTransformRef.current;
-          const newTransform = d3.zoomIdentity
-            .translate(cur.x + velocity * _diagCos, cur.y + velocity * _diagSin)
-            .scale(cur.k);
-          prevTransformRef.current = newTransform;
-          g.attr('transform', newTransform.toString());
-          (svg.node() as any).__zoom = newTransform;
-          _momentumRaf = requestAnimationFrame(applyMomentum);
-        };
-        _momentumRaf = requestAnimationFrame(applyMomentum);
       });
 
     svg.call(drag);
