@@ -1,5 +1,12 @@
+const path = require('path');
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Workspace root: fija el root al directorio frontend cuando hay multiples lockfiles
+  turbopack: {
+    root: __dirname,
+  },
+
   // Optimización de imágenes
   images: {
     remotePatterns: [
