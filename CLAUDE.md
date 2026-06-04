@@ -9,15 +9,15 @@ Infra en Docker + Traefik en `data.arrebolweddings.com` (8GB).
 
 | Tabla | Total | Último ID |
 |-------|-------|-----------|
-| philosophers | 177 | #206 (Pieper) |
-| statements | 505 | #536 |
-| connections | 1023 | #1175 |
+| philosophers | 180 | #209 (Horkheimer) |
+| statements | 516 | #547 |
+| connections | 1041 | #1198 |
 | tags | 79 | #79 |
-| references | 263 | #503 |
+| references | 268 | #508 |
 
-**Módulos auditados:** M1, M2, M4, M7, M8, M9, M10, M12, M13, M14, M15, M16, M18, M19, M20, M21, M22, M23T1, M23T2 (17 doctrinales + idealismo alemán y Hegel del M23). Pendientes: M3 (técnicas de investigación) y M6 (redacción) — no doctrinales. Lingüísticos saltados: M5, M11, M17.
+**Módulos auditados:** M1, M2, M4, M7, M8, M9, M10, M12, M13, M14, M15, M16, M18, M19, M20, M21, M22, M23 completo (T1 idealismo alemán, T2 Hegel, T3 marxismo/Frankfurt). Pendientes: M3 (técnicas de investigación) y M6 (redacción) — no doctrinales. Lingüísticos saltados: M5, M11, M17.
 **Auditoría:** 0 pending — toda la timeline auditada con tipología completa.
-**Versión:** 2.2.0
+**Versión:** 2.2.1
 
 ---
 
