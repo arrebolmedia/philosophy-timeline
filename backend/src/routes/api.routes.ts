@@ -505,7 +505,7 @@ router.get('/changelog', async (_req: Request, res: Response) => {
   try {
     const [dev, proposiciones] = await Promise.all([
       prisma.changelog.findMany({
-        where: { category: 'desarrollo' },
+        where: { category: { in: ['desarrollo', 'feature', 'fix', 'ux'] } },
         orderBy: { createdAt: 'desc' },
       }),
       prisma.changelog.findMany({
