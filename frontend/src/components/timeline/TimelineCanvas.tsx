@@ -6,7 +6,7 @@ import * as d3 from 'd3';
 import { toast } from 'sonner';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import { Info, ZoomIn, ZoomOut, Maximize2, ChevronDown, Download, Share2, Eye, EyeOff } from 'lucide-react';
+import { Info, Maximize2, ChevronDown, Download, Share2, Eye, EyeOff, Search } from 'lucide-react';
 import type { TimelineData, StatementNode, ConnectionLink, PhilosopherNode } from '@/types/timeline';
 
 const CONNECTION_COLORS = {
@@ -119,6 +119,16 @@ export function TimelineCanvas() {
     const newUrl = queryString ? `${pathname}?${queryString}` : pathname;
     router.replace(newUrl, { scroll: false });
   }, [filteredPhilosopher, filteredStatement, pathname, router]);
+
+  // Sync URL → state when params change externally (e.g. PhilosopherIndex selection)
+  useEffect(() => {
+    const p = searchParams.get('philosopher');
+    const s = searchParams.get('statement');
+    const urlPhil = p ? parseInt(p, 10) : null;
+    const urlStmt = s ? parseInt(s, 10) : null;
+    if (urlPhil !== filteredPhilosopher) setFilteredPhilosopher(urlPhil);
+    if (urlStmt !== filteredStatement) setFilteredStatement(urlStmt);
+  }, [searchParams]);
 
   const copyShareLink = useCallback(() => {
     if (typeof window === 'undefined') return;
@@ -292,7 +302,9 @@ export function TimelineCanvas() {
 
     // Click on background to clear filters (no zoom change)
     svg.on('click', (event) => {
-      if (event.target === event.currentTarget) {
+      const target = event.target as Element;
+      const isInteractive = !!target.closest?.('.statement, .philosopher-label, .connection');
+      if (!isInteractive) {
         skipZoomOnClearRef.current = true;
         setFilteredPhilosopher(null);
         setFilteredStatement(null);
@@ -313,7 +325,7 @@ export function TimelineCanvas() {
 
     // SINGLE DIAGONAL AXIS: philosophers and statements all share one diagonal line
     const ANGLE    = 40 * Math.PI / 180;
-    const PHIL_STEP      = 80;  // gap before each philosopher node
+    const PHIL_STEP      = 52;  // gap before each philosopher node
     const PHIL_AFTER_GAP = 42;  // extra gap after philosopher node before first statement
     const STAT_STEP      = 26;  // spacing between statement nodes
     const ORIGIN_X  = 100;
@@ -677,21 +689,6 @@ export function TimelineCanvas() {
 
     // no explicit cleanup necessary beyond clearing svg at start of effect
   }, [data, highlightId, canvasKey, chipSignature]);
-
-  // Zoom control functions
-  const handleZoomIn = useCallback(() => {
-    if (svgRef.current && zoomRef.current) {
-      const svg = d3.select(svgRef.current);
-      svg.transition().duration(300).call(zoomRef.current.scaleBy, 1.3);
-    }
-  }, []);
-
-  const handleZoomOut = useCallback(() => {
-    if (svgRef.current && zoomRef.current) {
-      const svg = d3.select(svgRef.current);
-      svg.transition().duration(300).call(zoomRef.current.scaleBy, 0.7);
-    }
-  }, []);
 
   const doResetZoom = useCallback(() => {
     if (!svgRef.current || !zoomRef.current || !containerRef.current) return;
@@ -1165,7 +1162,7 @@ export function TimelineCanvas() {
         activePhilosList.sort((a, b) => (a.data.birthYear || 0) - (b.data.birthYear || 0));
         
         // Calculate compact diagonal positions (same axis, only active nodes)
-        const COMPACT_PHIL_STEP = 80;
+        const COMPACT_PHIL_STEP = 52;
         const COMPACT_PHIL_AFTER_GAP = 42;
         const COMPACT_STAT_STEP = 26;
         const COMPACT_ANGLE = 40 * Math.PI / 180;
@@ -1297,31 +1294,42 @@ export function TimelineCanvas() {
           if (m) oldStmtPos.set(d.id, { x: +m[1], y: +m[2] });
         });
 
-        // Remove connections not in activeConnections, morph the rest
+        // Hide connections not in activeConnections (don't remove — must survive for next compaction)
         svg.selectAll<SVGPathElement, any>('.connection').each(function() {
           const el = d3.select(this);
           const fromId = +(el.attr('data-from') || 0);
           const toId   = +(el.attr('data-to')   || 0);
           const key = `${fromId}-${toId}`;
           if (!activeConnections.has(key)) {
-            el.transition().duration(200).style('opacity', 0).remove();
+            el.transition().duration(200).style('opacity', 0).style('pointer-events', 'none');
             return;
           }
-          // Morph to new position in sync with node transition
           const toStmtPos = newStatementPositions.get(toId);
           const frStmtPos = newStatementPositions.get(fromId);
-          if (!toStmtPos || !frStmtPos) { el.transition().duration(200).style('opacity', 0).remove(); return; }
+          if (!toStmtPos || !frStmtPos) {
+            el.transition().duration(200).style('opacity', 0).style('pointer-events', 'none');
+            return;
+          }
           const conn = connections.find((c: any) => c.statementFromId === fromId && c.statementToId === toId);
           const isRed = conn ? ['disagreement','refutation','oppose'].includes(conn.connectionType) : false;
-          const oldFrom = oldStmtPos.get(fromId);
-          const oldTo   = oldStmtPos.get(toId);
-          const startPath = oldFrom && oldTo
-            ? arcPath(oldFrom.x - 10, oldFrom.y - 4, oldTo.x - 10, oldTo.y - 4, isRed)
-            : el.attr('d');
           const endPath = arcPath(frStmtPos.x - 10, frStmtPos.y - 4, toStmtPos.x - 10, toStmtPos.y - 4, isRed);
-          el.attr('d', startPath)
-            .transition().duration(500).ease(d3.easeCubicInOut)
-            .attrTween('d', () => d3.interpolateString(startPath, endPath));
+          const wasHidden = +(el.style('opacity') || '1') < 0.05;
+          if (wasHidden) {
+            // Re-activating from hidden state: snap to new position, fade in opacity only
+            el.interrupt().attr('d', endPath).style('pointer-events', 'all')
+              .transition().duration(400).style('opacity', 1);
+          } else {
+            const oldFrom = oldStmtPos.get(fromId);
+            const oldTo   = oldStmtPos.get(toId);
+            const startPath = oldFrom && oldTo
+              ? arcPath(oldFrom.x - 10, oldFrom.y - 4, oldTo.x - 10, oldTo.y - 4, isRed)
+              : el.attr('d');
+            el.style('pointer-events', 'all')
+              .attr('d', startPath)
+              .transition().duration(500).ease(d3.easeCubicInOut)
+              .style('opacity', 1)
+              .attrTween('d', () => d3.interpolateString(startPath, endPath));
+          }
         });
         
       } else if (filteredPhilosopher || hasChipFilters) {
@@ -1338,7 +1346,7 @@ export function TimelineCanvas() {
         });
         activePhilosList.sort((a, b) => (a.data.birthYear || 0) - (b.data.birthYear || 0));
 
-        const COMPACT_PHIL_STEP2 = 80;
+        const COMPACT_PHIL_STEP2 = 52;
         const COMPACT_PHIL_AFTER_GAP2 = 42;
         const COMPACT_STAT_STEP2 = 26;
         const COMPACT_ANGLE2 = 40 * Math.PI / 180;
@@ -1472,23 +1480,34 @@ export function TimelineCanvas() {
           const toId   = +(el.attr('data-to')   || 0);
           const key = `${fromId}-${toId}`;
           if (!activeConnections.has(key)) {
-            el.transition().duration(200).style('opacity', 0).remove();
+            el.transition().duration(200).style('opacity', 0).style('pointer-events', 'none');
             return;
           }
           const frStmtPos = newStatementPositions.get(fromId);
           const toStmtPos = newStatementPositions.get(toId);
-          if (!frStmtPos || !toStmtPos) { el.transition().duration(200).style('opacity', 0).remove(); return; }
+          if (!frStmtPos || !toStmtPos) {
+            el.transition().duration(200).style('opacity', 0).style('pointer-events', 'none');
+            return;
+          }
           const conn = connections.find((c: any) => c.statementFromId === fromId && c.statementToId === toId);
           const isRed = conn ? ['disagreement','refutation','oppose'].includes(conn.connectionType) : false;
-          const oldFrom = oldStmtPos2.get(fromId);
-          const oldTo   = oldStmtPos2.get(toId);
-          const startPath = oldFrom && oldTo
-            ? arcPath2(oldFrom.x - 10, oldFrom.y - 4, oldTo.x - 10, oldTo.y - 4, isRed)
-            : el.attr('d');
           const endPath = arcPath2(frStmtPos.x - 10, frStmtPos.y - 4, toStmtPos.x - 10, toStmtPos.y - 4, isRed);
-          el.attr('d', startPath)
-            .transition().duration(500).ease(d3.easeCubicInOut)
-            .attrTween('d', () => d3.interpolateString(startPath, endPath));
+          const wasHidden = +(el.style('opacity') || '1') < 0.05;
+          if (wasHidden) {
+            el.interrupt().attr('d', endPath).style('pointer-events', 'all')
+              .transition().duration(400).style('opacity', 1);
+          } else {
+            const oldFrom = oldStmtPos2.get(fromId);
+            const oldTo   = oldStmtPos2.get(toId);
+            const startPath = oldFrom && oldTo
+              ? arcPath2(oldFrom.x - 10, oldFrom.y - 4, oldTo.x - 10, oldTo.y - 4, isRed)
+              : el.attr('d');
+            el.style('pointer-events', 'all')
+              .attr('d', startPath)
+              .transition().duration(500).ease(d3.easeCubicInOut)
+              .style('opacity', 1)
+              .attrTween('d', () => d3.interpolateString(startPath, endPath));
+          }
         });
 
       } else if (hasHover && !hasFilter) {
@@ -1661,20 +1680,11 @@ export function TimelineCanvas() {
           <Button
             size="icon"
             variant="secondary"
-            onClick={handleZoomIn}
-            title="Acercar (Zoom In)"
+            onClick={() => window.dispatchEvent(new CustomEvent('open-philosopher-index'))}
+            title="Buscar filósofo (Cmd/Ctrl+K)"
             className={`h-9 w-9 transition-opacity duration-500 ${meditationMode ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
           >
-            <ZoomIn className="h-4 w-4" />
-          </Button>
-          <Button
-            size="icon"
-            variant="secondary"
-            onClick={handleZoomOut}
-            title="Alejar (Zoom Out)"
-            className={`h-9 w-9 transition-opacity duration-500 ${meditationMode ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
-          >
-            <ZoomOut className="h-4 w-4" />
+            <Search className="h-4 w-4" />
           </Button>
           <Button
             size="icon"

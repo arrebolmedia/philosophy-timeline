@@ -4,6 +4,7 @@ import { Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { TimelineCanvas } from '@/components/timeline/TimelineCanvas';
 import { FilterBar } from '@/components/timeline/FilterBar';
+import { PhilosopherIndex } from '@/components/timeline/PhilosopherIndex';
 
 export function TimelinePageInner() {
   const searchParams = useSearchParams();
@@ -18,6 +19,7 @@ export function TimelinePageInner() {
         <FilterBar />
         <TimelineCanvas />
       </section>
+      <PhilosopherIndex />
     </div>
   );
 }
