@@ -1627,11 +1627,33 @@ export function TimelineCanvas() {
           });
         }, 350);
       } else {
-        // Just restore opacity of existing connections
-        svg.selectAll('.connection')
-          .transition()
-          .duration(300)
-          .style('opacity', 1);
+        // Restore opacity AND re-animate path back to original coords
+        // (compact mode morphed d to compact positions; we need to put them back)
+        const stmtPos = new Map<number, {x: number, y: number}>();
+        svg.selectAll('.statement').each(function(s: any) {
+          stmtPos.set(s.id, { x: s.x, y: s.y });
+        });
+        svg.selectAll<SVGPathElement, any>('.connection').each(function() {
+          const el = d3.select(this);
+          const fromId = +(el.attr('data-from') || 0);
+          const toId   = +(el.attr('data-to')   || 0);
+          const from = stmtPos.get(fromId);
+          const to   = stmtPos.get(toId);
+          if (!from || !to) return;
+          const conn = connections.find((c: any) => c.statementFromId === fromId && c.statementToId === toId);
+          const isRed = conn ? ['disagreement','refutation','oppose'].includes(conn.connectionType) : false;
+          const fx = from.x - 10, fy = from.y - 4;
+          const tx = to.x - 10,   ty = to.y - 4;
+          const ddx = tx - fx, ddy = ty - fy;
+          const r = Math.sqrt(ddx * ddx + ddy * ddy) / 2;
+          const sweep = isRed ? (ddx >= 0 ? 0 : 1) : (ddx >= 0 ? 1 : 0);
+          const endPath = `M ${fx} ${fy} A ${r} ${r} 0 0 ${sweep} ${tx} ${ty}`;
+          const startPath = el.attr('d');
+          el.style('pointer-events', 'all')
+            .transition().duration(400).ease(d3.easeCubicInOut)
+            .style('opacity', 1)
+            .attrTween('d', () => d3.interpolateString(startPath || endPath, endPath));
+        });
       }
     }
 
