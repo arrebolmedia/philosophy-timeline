@@ -10,14 +10,14 @@ Infra en Docker + Traefik en `data.arrebolweddings.com` (8GB).
 | Tabla | Total | Último ID |
 |-------|-------|-----------|
 | philosophers | 182 | #211 (Spencer) |
-| statements | 532 | #563 |
-| connections | 1074 | #1240 |
+| statements | 537 | #568 |
+| connections | 1084 | #1250 |
 | tags | 79 | #79 |
-| references | 279 | #519 |
+| references | 280 | #520 |
 
-**Módulos auditados:** M23 completo (T1–T5) + M1, M2, M4, M7, M8, M9, M10, M12, M13, M14, M15, M16, M18, M19, M20, M21, M22. M3 (técnicas) y M6 (redacción) no doctrinales. Lingüísticos saltados: M5, M11, M17. **Toda la timeline doctrinal cerrada.**
+**Módulos auditados:** M23 completo (T1–T6 inc. M23T6 fenomenología/existencialismo/hermenéutica) + M1, M2, M4, M7, M8, M9, M10, M12, M13, M14, M15, M16, M18, M19, M20, M21, M22. M3 (técnicas) y M6 (redacción) no doctrinales. Lingüísticos saltados: M5, M11, M17. **Toda la timeline doctrinal cerrada.**
 **Auditoría:** 0 pending — toda la timeline auditada con tipología completa.
-**Versión:** 2.2.4
+**Versión:** 2.2.5
 
 ---
 
