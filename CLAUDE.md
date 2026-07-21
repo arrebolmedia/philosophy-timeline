@@ -9,13 +9,13 @@ Infra en Docker + Traefik en `data.arrebolweddings.com` (8GB).
 
 | Tabla | Total | Último ID |
 |-------|-------|-----------|
-| philosophers | 188 | #217 (Skidelsky) |
-| statements | 547 | #578 |
-| connections | 1104 | #1270 |
+| philosophers | 190 | #219 (Searle) |
+| statements | 554 | #585 |
+| connections | 1109 | #1275 |
 | tags | 79 | #79 |
 | references | 289 | #529 |
 
-**Módulos auditados:** M23 completo (T1–T7) + M26T1 (filosofía del lenguaje LOT vs natural) + M1, M2, M4, M7, M8, M9, M10, M12, M13, M14, M15, M16, M18, M19, M20, M21, M22. M3 (técnicas) y M6 (redacción) no doctrinales. Lingüísticos saltados: M5, M11, M17. M24 (Latín II) y M25 (Historia del Arte) pendientes de evaluación doctrinal.
+**Módulos auditados:** M23 completo (T1–T7) + M26 en curso (T1 lenguaje-pensamiento LOT vs natural, T2 actos de habla / acción comunicativa; más temas por venir) + M1, M2, M4, M7, M8, M9, M10, M12, M13, M14, M15, M16, M18, M19, M20, M21, M22. M3 (técnicas) y M6 (redacción) no doctrinales. Lingüísticos saltados: M5, M11, M17. M24 (Latín II) y M25 (Historia del Arte) excluidos por decisión (no doctrinales para la timeline).
 **Auditoría:** 0 pending — toda la timeline auditada con tipología completa.
 **Versión:** 2.2.7
 
