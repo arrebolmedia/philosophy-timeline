@@ -9,15 +9,15 @@ Infra en Docker + Traefik en `data.arrebolweddings.com` (8GB).
 
 | Tabla | Total | Último ID |
 |-------|-------|-----------|
-| philosophers | 190 | #219 (Searle) |
-| statements | 554 | #585 |
-| connections | 1109 | #1275 |
+| philosophers | 234 | #263 (Söderblom) |
+| statements | 687 | #719 |
+| connections | 1228 | #1394 |
 | tags | 79 | #79 |
-| references | 289 | #529 |
+| references | 356 | #596 |
 
-**Módulos auditados:** M23 completo (T1–T7) + M26 en curso (T1 lenguaje-pensamiento LOT vs natural, T2 actos de habla / acción comunicativa; más temas por venir) + M1, M2, M4, M7, M8, M9, M10, M12, M13, M14, M15, M16, M18, M19, M20, M21, M22. M3 (técnicas) y M6 (redacción) no doctrinales. Lingüísticos saltados: M5, M11, M17. M24 (Latín II) y M25 (Historia del Arte) excluidos por decisión (no doctrinales para la timeline).
+**Módulos auditados:** M23 completo (T1–T7) + M26 statements completos (T1 LOT vs natural; T2 actos de habla / acción comunicativa; T4 industria cultural #586–#592; T5, T7, T9 #593–#604: Habermas, Heidegger, Hobbes, Rousseau, Saussure, Eco. T3 y T6 sin filósofos: lingüística educativa y tipología periodística. Grupo B aprobado e insertado: #605–#621 con 10 autores nuevos #224–#233 (Watzlawick, Burke, Salaverría, López García, Lasswell, Lazarsfeld, Watson, Skinner, Lévi-Strauss, Barthes; borderline de comunicación, psicología, historia y periodismo; sin school salvo Semiótica para Lévi-Strauss y Barthes). Conexiones M26T4–T9: 27 validadas #1276–#1302 (2026-10-26); + Habermas #622 esfera pública (Strukturwandel 1962, verificado en SEP §1.2) y Burke #608 → #622 crítica #1303 (verificada en Burke, Manuscrits 23, 2005, p. 25); sin conexión aún Burke #606, Hobbes #599, Salaverría #609/#611/#612, Lasswell como origen. M26 COMPLETO) + **M27 completo (T1–T9) y M28 T1–T2: 97 statements #623–#719, 30 autores nuevos #234–#263 (2026-10-26); propuestas en `C:\tmp\m27\`; conexiones: 91 validadas #1304–#1394 (2026-10-26): 62 recomendadas + 15 recomendadas con fuente cotejada en web (13 confirmadas, 2 parciales) + 14 opcionales verificadas (8 confirmadas, 4 parciales, 2 lectura propia con confidence 2); sin conexión aún #636 (Jouvenel) y #695 (Huntington), con candidatas verificadas: #636→#650 Sieyès y #695→#687 Wallerstein; 31 opcionales no cargadas (`C:\tmp\conn27\REVISION_CONEXIONES_M27_M28.md`)** + M1, M2, M4, M7, M8, M9, M10, M12, M13, M14, M15, M16, M18, M19, M20, M21, M22. M3 (técnicas) y M6 (redacción) no doctrinales. Lingüísticos saltados: M5, M11, M17. M24 (Latín II) y M25 (Historia del Arte) excluidos por decisión (no doctrinales para la timeline).
 **Auditoría:** 0 pending — toda la timeline auditada con tipología completa.
-**Versión:** 2.2.7
+**Versión:** 2.2.9
 
 ---
 
@@ -156,8 +156,10 @@ ssh root@data.arrebolweddings.com "cd /opt/timeline && git pull && docker compos
 
 ## Taxonomía
 
-### Categories (ramas, 12)
-1. Ética · 2. Metafísica · 3. Epistemología · 4. Política · 5. Estética · 6. Lenguaje · 7. Antropología · 8. Religión · 9. Ciencia · 10. Naturaleza · 11. Mente · 12. Lógica
+### Categories (ramas, 12) — numeración REAL de la tabla `categories`
+1. Ética · 2. Metafísica · 3. Epistemología · 4. Lógica · 5. Filosofía Política · 6. Estética · 7. Filosofía de la Mente · 8. Filosofía del Lenguaje · 9. Antropología Filosófica · 10. Filosofía de la Religión · 11. Filosofía de la Ciencia · 12. Filosofía de la Naturaleza
+
+⚠️ Hasta 2026-10-26 esta lista tenía otro orden (4 Política, 5 Estética, 6 Lenguaje, 7 Antropología, 8 Religión, 9 Ciencia, 10 Naturaleza, 11 Mente, 12 Lógica) y dos tramos de carga la siguieron: #422–#434 (2026-05-15) y #483–#578 (2026-05-21 → 06-26). **Auditados y corregidos el 2026-10-26:** 59 statements remapeados (viejo→real: 4→5, 5→6, 6→8, 7→9, 8→10, 9→11, 10→12, 11→7, 12→4), verificado 59/59 contra lectura de contenido; reversión en `C:\tmp\sync_categorias_fix_REVERT.sql`. Los 3 metafilosóficos fuera del patrón se reasignaron con aprobación: #527 Schopenhauer → Ética, #565 Heidegger → Metafísica, #574 Sloterdijk → Epistemología (criterio: "qué es la filosofía" se clasifica por su ángulo; mayoría en Epistemología). Confirmar siempre con `SELECT id, name FROM categories`.
 
 ### Schools (32)
 1 Presocráticos · 2 Sofistas · 3 Platonismo · 4 Aristotelismo · 5 Estoicismo · 6 Epicureísmo · 7 Escolástica · 8 Humanismo · 9 Racionalismo · 10 Empirismo · 11 Idealismo Alemán · 12 Positivismo · 13 Existencialismo · 14 Fenomenología · 15 Filosofía Analítica · 17 Neoplatonismo · 18 Escepticismo · 19 Nominalismo · 20–32 expandidas (consultar DB)
@@ -178,6 +180,7 @@ ssh root@data.arrebolweddings.com "cd /opt/timeline && git pull && docker compos
 | `No se pueden conectar statements del mismo filósofo` | Trigger `trg_no_same_philosopher` — usar filósofos distintos |
 | `Could not resolve authentication method` | Setear `$env:ANTHROPIC_API_KEY` desde `c:\Projects\digest\.env` |
 | IDs divergen local/prod | Usar `OVERRIDING SYSTEM VALUE` + `ON CONFLICT DO NOTHING` + `setval` |
+| `statement_references` falla en local por FK de `references` | Los IDs de `references` **antiguas NO coinciden** entre local y prod (p. ej. Leviatán 87 prod / 116 local; Teoría de la acción comunicativa 208 / 419; Dialéctica de la Ilustración 185 / 396). philosophers y statements sí están alineados. Al replicar a local, remapear reference_id por título+autor (ejemplo: `C:\tmp\sync_m26_t5t7t9_local.sql`). |
 | Caracteres rotos en SSH (tildes, ñ) | Write tool → scp → `psql -f`, nunca heredoc |
 | Statement duplicado | `SELECT` por `philosopher_id` antes de proponer |
 
