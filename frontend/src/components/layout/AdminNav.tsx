@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { signOut } from 'next-auth/react';
 import { Users, FileText, GitBranch, LayoutDashboard, LogOut } from 'lucide-react';
+import { BASE_PATH } from '@/lib/basePath';
 
 export default function AdminNav() {
   const pathname = usePathname();
@@ -83,7 +84,9 @@ export default function AdminNav() {
             </Link>
             
             <button
-              onClick={() => signOut({ callbackUrl: '/admin/login' })}
+              // callbackUrl lo resuelve NextAuth contra el origen (no contra el
+              // basePath), por eso lleva el prefijo explícito.
+              onClick={() => signOut({ callbackUrl: `${BASE_PATH}/admin/login` })}
               className="text-sm text-red-600 hover:text-red-700 transition-colors flex items-center space-x-1 px-3 py-1.5 rounded-md hover:bg-red-50"
             >
               <LogOut className="w-4 h-4" />

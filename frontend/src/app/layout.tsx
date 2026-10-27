@@ -7,6 +7,7 @@ import { AuthProvider } from '@/components/providers/auth-provider'
 import { Toaster } from 'sonner'
 import { Navigation } from '@/components/layout/Navigation'
 import { Footer } from '@/components/layout/Footer'
+import { BASE_PATH } from '@/lib/basePath'
 
 const inter = Inter({ 
   subsets: ['latin'],
@@ -31,6 +32,10 @@ const poppins = Poppins({
   variable: '--font-poppins',
 })
 
+// URL pública de la app, YA con el basePath (en producción:
+// https://anthonycazares.cafe/timeline). Se usa como metadataBase.
+const SITE_URL = process.env.NEXT_PUBLIC_BASE_URL || `http://localhost:3000${BASE_PATH}`
+
 export const metadata: Metadata = {
   title: {
     default: 'Historia de la Filosofía Interactiva',
@@ -48,11 +53,19 @@ export const metadata: Metadata = {
   ],
   authors: [{ name: 'Historia de la Filosofía Team' }],
   creator: 'Historia de la Filosofía Team',
-  metadataBase: new URL(process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'),
+  // En esta versión de Next, las URLs relativas de metadata (p. ej.
+  // '/images/OG-image.png') se resuelven uniendo la RUTA de metadataBase con la
+  // relativa (resolveUrl en next/dist/lib/metadata/resolvers/resolve-url.js),
+  // así que con metadataBase = .../timeline salen como .../timeline/images/...
+  // y conservan el basePath. Por eso no se prefijan a mano. Requisito:
+  // NEXT_PUBLIC_BASE_URL debe incluir el basePath.
+  metadataBase: new URL(SITE_URL),
   openGraph: {
     type: 'website',
     locale: 'es_ES',
-    url: '/',
+    // Absoluta y sin barra final (un '/' relativo saldría como .../timeline/,
+    // que Next redirige con 308 a .../timeline).
+    url: SITE_URL,
     title: 'Historia de la Filosofía Interactiva',
     description: 'Una guía visual.',
     siteName: 'Historia de la Filosofía',
@@ -84,6 +97,13 @@ export const metadata: Metadata = {
   },
   verification: {
     google: 'your-google-verification-code',
+  },
+  // app/icon.tsx (icono dinámico) sale en el <link rel="icon"> como "/icon?hash",
+  // SIN basePath (Next 16.2 + Turbopack), y el navegador lo pediría a la raíz del
+  // dominio, fuera de la app. Declararlo aquí lo hace salir como /timeline/icon
+  // (las URLs de `icons` no se resuelven contra metadataBase, de ahí el prefijo).
+  icons: {
+    icon: [{ url: `${BASE_PATH}/icon`, type: 'image/png', sizes: '32x32' }],
   },
 }
 

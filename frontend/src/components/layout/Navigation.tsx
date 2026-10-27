@@ -6,10 +6,11 @@ import { Button } from '@/components/ui/button';
 import { BookOpen, Users, Map, Search } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
+// La visualización es la raíz de la app (/ → https://anthonycazares.cafe/timeline);
+// ya no existe la landing "Inicio", así que solo queda la entrada Timeline.
 const navigation = [
-  { name: 'Inicio', href: '/', icon: BookOpen },
   // { name: 'Filósofos', href: '/filosofos', icon: Users },
-  { name: 'Timeline', href: '/timeline', icon: Map },
+  { name: 'Timeline', href: '/', icon: Map },
   // { name: 'Buscar', href: '/buscar', icon: Search },
 ];
 
@@ -55,7 +56,8 @@ export function Navigation() {
   // Note: meditation mode applies a fade-out via classNames below (preserves smooth transition)
 
   // Admin and timeline pages always show solid navigation, home page uses transparent on scroll
-  const isTimelinePage = pathname === '/timeline';
+  // (usePathname devuelve la ruta SIN basePath: la visualización es '/')
+  const isTimelinePage = pathname === '/';
   const shouldBeTransparent = !isAdminPage && !isScrolled && !isTimelinePage;
 
   return (

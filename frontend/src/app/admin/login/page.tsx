@@ -3,6 +3,7 @@
 import { signIn } from 'next-auth/react';
 import { useState, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -101,9 +102,10 @@ export default function LoginPage() {
           </form>
 
           <div className="mt-6 text-center">
-            <a href="/" className="text-sm text-gray-600 hover:text-primary transition-colors">
+            {/* next/link aplica el basePath; un <a href="/"> saldría de la app */}
+            <Link href="/" className="text-sm text-gray-600 hover:text-primary transition-colors">
               ← Volver al Timeline
-            </a>
+            </Link>
           </div>
         </div>
       </div>

@@ -45,7 +45,7 @@ export async function GET(req: NextRequest) {
   let kicker: string | null = 'Historia de la Filosofía';
   let headline = 'Timeline interactivo';
   let body: string | null = 'Conexiones entre ideas filosóficas a través del tiempo.';
-  const footer = 'timeline.anthonycazares.cafe';
+  const footer = 'anthonycazares.cafe/timeline';
 
   if (philosopherId !== null || statementId !== null) {
     const data = await fetchTimeline();

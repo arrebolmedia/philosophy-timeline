@@ -8,6 +8,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Info, Maximize2, ChevronDown, Download, Share2, Eye, EyeOff, Search } from 'lucide-react';
 import type { TimelineData, StatementNode, ConnectionLink, PhilosopherNode } from '@/types/timeline';
+import { withBasePath } from '@/lib/basePath';
 
 const CONNECTION_COLORS = {
   resonate: '#86efac',
@@ -452,9 +453,12 @@ export function TimelineCanvas() {
       // Add adjustments as needed, e.g.: 'pitagoras': { x: -50, y: -20 }
     };
 
-    // Philosopher image (if available) with grayscale filter
+    // Philosopher image (if available) with grayscale filter.
+    // La BD guarda algunas como ruta de public/ ("/images/philosophers/x.jpg");
+    // como <image> de SVG no pasa por Next, hay que prefijarla con el basePath
+    // (las URLs https:// externas se dejan tal cual).
     philoItems.append('image')
-      .attr('xlink:href', (d: any) => d.imageUrl || '')
+      .attr('xlink:href', (d: any) => withBasePath(d.imageUrl || ''))
       .attr('x', (d: any) => imageAdjustments[d.slug]?.x ?? -48)
       .attr('y', (d: any) => imageAdjustments[d.slug]?.y ?? -18)
       .attr('width', 36)
@@ -858,7 +862,7 @@ export function TimelineCanvas() {
 
     // URL — esquina inferior izquierda
     const urlEl = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-    urlEl.textContent = 'timeline.anthonycazares.cafe';
+    urlEl.textContent = 'anthonycazares.cafe/timeline';
     urlEl.setAttribute('x', String(vx + PADDING / 2));
     urlEl.setAttribute('y', String(vy + vh - PADDING / 4));
     urlEl.setAttribute('text-anchor', 'start');

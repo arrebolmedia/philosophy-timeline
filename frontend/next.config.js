@@ -2,6 +2,14 @@ const path = require('path');
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // La app se sirve bajo https://anthonycazares.cafe/timeline (antes en el
+  // subdominio timeline.anthonycazares.cafe). Todas las rutas de Next llevan
+  // el prefijo: /timeline/_next, /timeline/api/auth, /timeline/api/og, etc.
+  // El valor se incrusta en build; src/lib/basePath.ts lee la misma variable
+  // para prefijar rutas absolutas que Next no prefija solo (window.location,
+  // <a href>, callbackUrl de NextAuth, imágenes de public/ guardadas en BD).
+  basePath: process.env.NEXT_PUBLIC_BASE_PATH ?? '/timeline',
+
   // Workspace root: fija el root al directorio frontend cuando hay multiples lockfiles
   turbopack: {
     root: __dirname,

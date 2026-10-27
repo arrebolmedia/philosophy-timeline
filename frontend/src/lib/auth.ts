@@ -1,5 +1,6 @@
 import { NextAuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
+import { BASE_PATH } from './basePath';
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -21,7 +22,10 @@ export const authOptions: NextAuthOptions = {
     })
   ],
   pages: {
-    signIn: '/admin/login',
+    // NextAuth devuelve este valor tal cual como cabecera Location (ruta
+    // absoluta del mismo origen) y Next NO le aplica el basePath, así que va
+    // prefijado. Ojo: en src/middleware.ts es al revés (withAuth ya lo prefija).
+    signIn: `${BASE_PATH}/admin/login`,
   },
   callbacks: {
     async jwt({ token, user }) {

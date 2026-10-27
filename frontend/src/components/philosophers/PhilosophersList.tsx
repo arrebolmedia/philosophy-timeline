@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { BookOpen, Calendar, GraduationCap } from 'lucide-react';
+import { BASE_PATH } from '@/lib/basePath';
 
 interface Philosopher {
   id: number;
@@ -182,7 +183,8 @@ export function PhilosophersList() {
             onClick={() => {
               const params = new URLSearchParams(searchParams.toString());
               params.set('page', (page - 1).toString());
-              window.location.href = `/filosofos?${params.toString()}`;
+              // window.location no aplica el basePath: se prefija a mano
+              window.location.href = `${BASE_PATH}/filosofos?${params.toString()}`;
             }}
           >
             Anterior
@@ -208,7 +210,7 @@ export function PhilosophersList() {
                   onClick={() => {
                     const params = new URLSearchParams(searchParams.toString());
                     params.set('page', pageNum.toString());
-                    window.location.href = `/filosofos?${params.toString()}`;
+                    window.location.href = `${BASE_PATH}/filosofos?${params.toString()}`;
                   }}
                 >
                   {pageNum}
@@ -223,7 +225,7 @@ export function PhilosophersList() {
             onClick={() => {
               const params = new URLSearchParams(searchParams.toString());
               params.set('page', (page + 1).toString());
-              window.location.href = `/filosofos?${params.toString()}`;
+              window.location.href = `${BASE_PATH}/filosofos?${params.toString()}`;
             }}
           >
             Siguiente
