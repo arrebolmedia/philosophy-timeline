@@ -20,13 +20,15 @@ export function Footer() {
             Registro de cambios
           </Link>
           <span aria-hidden>·</span>
-          <Link href="/legal" className="underline underline-offset-4 hover:text-gray-600 transition-colors">
-            Licencia
-          </Link>
+          {/* Licencia y privacidad son las del sitio entero (anthonycazares.cafe/legal/ y
+              /privacidad/, en la otra app): <a> con ruta del dominio, sin el basePath. */}
+          <a href="/legal/" className="underline underline-offset-4 hover:text-gray-600 transition-colors">
+            Licencia CC BY 4.0
+          </a>
           <span aria-hidden>·</span>
-          <Link href="/privacidad" className="underline underline-offset-4 hover:text-gray-600 transition-colors">
+          <a href="/privacidad/" className="underline underline-offset-4 hover:text-gray-600 transition-colors">
             Privacidad
-          </Link>
+          </a>
         </div>
       </div>
     </footer>

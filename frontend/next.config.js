@@ -10,6 +10,17 @@ const nextConfig = {
   // <a href>, callbackUrl de NextAuth, imágenes de public/ guardadas en BD).
   basePath: process.env.NEXT_PUBLIC_BASE_PATH ?? '/timeline',
 
+  // Licencia y privacidad ya no viven en el timeline: son las del sitio entero
+  // (anthonycazares.cafe/legal/ y /privacidad/). basePath: false para poder
+  // redirigir fuera del prefijo; las rutas viejas siguen funcionando (308).
+  async redirects() {
+    const base = process.env.NEXT_PUBLIC_BASE_PATH ?? '/timeline';
+    return [
+      { source: `${base}/legal`, destination: '/legal/', basePath: false, permanent: true },
+      { source: `${base}/privacidad`, destination: '/privacidad/', basePath: false, permanent: true },
+    ];
+  },
+
   // Workspace root: fija el root al directorio frontend cuando hay multiples lockfiles
   turbopack: {
     root: __dirname,

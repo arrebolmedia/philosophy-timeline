@@ -11,13 +11,13 @@ Infra en Docker + Traefik en `data.arrebolweddings.com` (8GB). **URL pública: h
 |-------|-------|-----------|
 | philosophers | 234 | #263 (Söderblom) |
 | statements | 687 | #719 |
-| connections | 1228 | #1394 |
+| connections | 1230 | #1396 |
 | tags | 79 | #79 |
 | references | 356 | #596 |
 
 **Módulos auditados:** M23 completo (T1–T7) + M26 statements completos (T1 LOT vs natural; T2 actos de habla / acción comunicativa; T4 industria cultural #586–#592; T5, T7, T9 #593–#604: Habermas, Heidegger, Hobbes, Rousseau, Saussure, Eco. T3 y T6 sin filósofos: lingüística educativa y tipología periodística. Grupo B aprobado e insertado: #605–#621 con 10 autores nuevos #224–#233 (Watzlawick, Burke, Salaverría, López García, Lasswell, Lazarsfeld, Watson, Skinner, Lévi-Strauss, Barthes; borderline de comunicación, psicología, historia y periodismo; sin school salvo Semiótica para Lévi-Strauss y Barthes). Conexiones M26T4–T9: 27 validadas #1276–#1302 (2026-10-26); + Habermas #622 esfera pública (Strukturwandel 1962, verificado en SEP §1.2) y Burke #608 → #622 crítica #1303 (verificada en Burke, Manuscrits 23, 2005, p. 25); sin conexión aún Burke #606, Hobbes #599, Salaverría #609/#611/#612, Lasswell como origen. M26 COMPLETO) + **M27 completo (T1–T9) y M28 T1–T2: 97 statements #623–#719, 30 autores nuevos #234–#263 (2026-10-26); propuestas en `C:\tmp\m27\`; conexiones: 91 validadas #1304–#1394 (2026-10-26): 62 recomendadas + 15 recomendadas con fuente cotejada en web (13 confirmadas, 2 parciales) + 14 opcionales verificadas (8 confirmadas, 4 parciales, 2 lectura propia con confidence 2); sin conexión aún #636 (Jouvenel) y #695 (Huntington), con candidatas verificadas: #636→#650 Sieyès y #695→#687 Wallerstein; 31 opcionales no cargadas (`C:\tmp\conn27\REVISION_CONEXIONES_M27_M28.md`)** + M1, M2, M4, M7, M8, M9, M10, M12, M13, M14, M15, M16, M18, M19, M20, M21, M22. M3 (técnicas) y M6 (redacción) no doctrinales. Lingüísticos saltados: M5, M11, M17. M24 (Latín II) y M25 (Historia del Arte) excluidos por decisión (no doctrinales para la timeline).
 **Auditoría:** 0 pending — toda la timeline auditada con tipología completa.
-**Versión:** 2.4.1
+**Versión:** 2.4.2
 
 ---
 
@@ -195,6 +195,7 @@ ssh root@data.arrebolweddings.com "cd /opt/timeline && git pull && docker-compos
 
 | Versión | Fecha | Cambio |
 |---------|-------|--------|
+| 2.4.2 | 2026-10-27 | Licencia y privacidad unificadas con el sitio: el pie enlaza a anthonycazares.cafe/legal/ (CC BY 4.0; antes decía BY-NC) y /privacidad/ (la anterior citaba Google Analytics, Vercel y Google Fonts, que no se usan). Se retiran /legal y /privacidad del timeline; `redirects()` con `basePath: false` las manda a las nuevas (308). |
 | 2.4.1 | 2026-10-27 | Fix: las fichas `/filosofos/[slug]` daban 404 para todos (en Next 15+ `params` es Promesa y se leía sin `await`). Títulos de /filosofos sin el sufijo duplicado (el layout ya aplica el template). |
 | 2.4.0 | 2026-10-27 | **Menú del sitio integrado:** la barra propia ("Historia de la Filosofía") se sustituye por la del sitio anthonycazares.cafe (barra fija de lado a lado, 4rem; Timeline marcado como sección actual). `src/components/layout/MenuSitio.tsx` + `menu-sitio.css` son COPIA del menú del repo `anthonycazares-cafe` (components/Menu.tsx y menu.css): mantener a la par. Conserva el fundido en modo meditación y no aparece en /admin. |
 | 2.3.1 | 2026-10-27 | **Seguridad:** next 16.2.4 → 16.4.3 (RCE sin autenticación en `/_next/image` con SVG, GHSA-2464-fhr4-w9xw; RCE en `use cache`, GHSA-673q-mjm6-r5xr; DoS en Server Actions, GHSA-p3m5-59mp-jv5r). Mientras se desplegaba, Traefik bloqueó `/timeline/_next/image` (archivo `/opt/traefik/dynamic/timeline-bloqueo-image.yml`). |
