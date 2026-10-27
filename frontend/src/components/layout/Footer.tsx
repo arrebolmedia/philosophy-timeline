@@ -23,7 +23,7 @@ export function Footer() {
           {/* Licencia y privacidad son las del sitio entero (anthonycazares.cafe/legal/ y
               /privacidad/, en la otra app): <a> con ruta del dominio, sin el basePath. */}
           <a href="/legal/" className="underline underline-offset-4 hover:text-gray-600 transition-colors">
-            Licencia CC BY 4.0
+            Licencia CC BY-NC 4.0
           </a>
           <span aria-hidden>·</span>
           <a href="/privacidad/" className="underline underline-offset-4 hover:text-gray-600 transition-colors">
