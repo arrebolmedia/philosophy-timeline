@@ -2,6 +2,7 @@
 
 import { usePathname } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
+import { useMeditacion } from '@/lib/useMeditacion';
 import './menu-sitio.css';
 
 // Menú del sitio anthonycazares.cafe (el mismo del resto del dominio): mismo marcado, mismas
@@ -22,25 +23,13 @@ export function MenuSitio() {
   // usePathname devuelve la ruta SIN basePath: la visualización es '/'.
   const ruta = usePathname() ?? '/';
   const [abierto, setAbierto] = useState(false);
-  const [meditacion, setMeditacion] = useState(false);
+  // Modo meditación (?meditation=1): la barra se desvanece.
+  const meditacion = useMeditacion();
   const nav = useRef<HTMLElement>(null);
   const boton = useRef<HTMLButtonElement>(null);
 
   // Al navegar, se cierra.
   useEffect(() => setAbierto(false), [ruta]);
-
-  // Modo meditación (?meditation=1): la barra se desvanece. Se lee de la URL (como la barra
-  // anterior): router.replace no dispara popstate, así que se consulta también cada 200 ms.
-  useEffect(() => {
-    const leer = () => setMeditacion(new URLSearchParams(window.location.search).get('meditation') === '1');
-    leer();
-    window.addEventListener('popstate', leer);
-    const intervalo = window.setInterval(leer, 200);
-    return () => {
-      window.removeEventListener('popstate', leer);
-      window.clearInterval(intervalo);
-    };
-  }, []);
 
   // Abierto: Escape cierra y devuelve el foco; un clic fuera cierra.
   useEffect(() => {

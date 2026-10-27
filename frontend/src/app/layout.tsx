@@ -6,7 +6,7 @@ import { QueryProvider } from '@/components/providers/query-provider'
 import { AuthProvider } from '@/components/providers/auth-provider'
 import { Toaster } from 'sonner'
 import { MenuSitio } from '@/components/layout/MenuSitio'
-import { Footer } from '@/components/layout/Footer'
+import { PieSitio } from '@/components/layout/PieSitio'
 import { BASE_PATH } from '@/lib/basePath'
 
 const inter = Inter({ 
@@ -128,7 +128,7 @@ export default function RootLayout({
                 <div className="flex-1">
                   {children}
                 </div>
-                <Footer />
+                <PieSitio />
               </div>
               <Toaster position="bottom-right" richColors closeButton />
             </QueryProvider>

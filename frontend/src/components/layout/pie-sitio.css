@@ -1,0 +1,75 @@
+/*
+ * Pie del sitio anthonycazares.cafe, el mismo del resto del dominio. Reproduce el aspecto de
+ * components/Pie.tsx del repo del sitio principal (C:\Projects\anthonycazares-cafe), que allí
+ * se arma con utilidades de Tailwind y la columna de lectura (Columna.tsx: 38rem, 1rem/1.25rem
+ * de margen, 6rem abajo). Paleta: la del sitio, con la oscura bajo la clase .dark (next-themes).
+ */
+
+.pie-sitio {
+  --text-dark: #2a2a2a;
+  --text-light: #666;
+  --accent: #4a4a4a;
+  max-width: 38rem;
+  margin: 5rem auto 0;
+  padding: 0 1rem 6rem;
+  font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  line-height: 1.68;
+}
+.dark .pie-sitio {
+  --text-dark: #e6e6e6;
+  --text-light: #a8a8a8;
+  --accent: #b9b9b9;
+}
+@media (min-width: 640px) {
+  .pie-sitio {
+    padding-inline: 1.25rem;
+  }
+}
+
+.pie-sitio footer {
+  border-top: 1px solid color-mix(in srgb, var(--text-dark) 14%, transparent);
+  padding-top: 1.5rem;
+  font-size: 0.86rem;
+  color: var(--text-light);
+}
+.pie-sitio p {
+  margin: 0;
+}
+.pie-sitio .pie-marca {
+  margin-bottom: 0.75rem;
+}
+.pie-sitio ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1.25rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.pie-sitio .pie-fuera,
+.pie-sitio .pie-linea {
+  margin-top: 0.5rem;
+}
+.pie-sitio .pie-nota {
+  margin-top: 1rem;
+}
+.pie-sitio a {
+  color: inherit;
+  text-decoration-line: underline;
+  text-underline-offset: 0.18em;
+  text-decoration-thickness: 0.06em;
+}
+.pie-sitio a:hover {
+  color: var(--accent);
+}
+.pie-sitio a:focus-visible {
+  outline: 2px solid var(--text-dark);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+@media print {
+  .pie-sitio {
+    display: none;
+  }
+}
