@@ -5,7 +5,7 @@ import { ThemeProvider } from '@/components/providers/theme-provider'
 import { QueryProvider } from '@/components/providers/query-provider'
 import { AuthProvider } from '@/components/providers/auth-provider'
 import { Toaster } from 'sonner'
-import { Navigation } from '@/components/layout/Navigation'
+import { MenuSitio } from '@/components/layout/MenuSitio'
 import { Footer } from '@/components/layout/Footer'
 import { BASE_PATH } from '@/lib/basePath'
 
@@ -124,7 +124,7 @@ export default function RootLayout({
           >
             <QueryProvider>
               <div className="relative flex min-h-screen flex-col">
-                <Navigation />
+                <MenuSitio />
                 <div className="flex-1">
                   {children}
                 </div>

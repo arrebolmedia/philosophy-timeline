@@ -1,0 +1,184 @@
+/*
+ * Menú del sitio anthonycazares.cafe, el mismo que el resto del dominio: barra fija arriba,
+ * de lado a lado. COPIA de components/menu.css del repo del sitio principal
+ * (C:\Projects\anthonycazares-cafe): mantener a la par. Diferencias de esta copia:
+ *   - z-index 50 (como la barra anterior del timeline): los diálogos y popovers (z-50, en
+ *     portales al final del body) quedan por encima.
+ *   - fuente --font-poppins (next/font de este layout) y paleta oscura con la clase .dark
+ *     (next-themes) en lugar de prefers-color-scheme; mismos valores que el sitio.
+ *   - sin html { scroll-padding-top } ni .envoltorio (no aplican aquí).
+ * Alto: --menu-alto (4rem), el hueco que ya reservan las páginas del timeline (64px).
+ */
+
+.menu {
+  --menu-alto: 4rem;
+  --bg-white: #fff;
+  --border-light: #e8e8e8;
+  --text-light: #666;
+  --text-dark: #2a2a2a;
+  position: fixed;
+  z-index: 50;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--menu-alto);
+  background-color: var(--bg-white);
+  border-bottom: 1px solid var(--border-light);
+  font-family: var(--font-poppins), "Poppins", sans-serif;
+  line-height: 1.4;
+  transition: opacity 0.5s, transform 0.5s;
+}
+.dark .menu {
+  --bg-white: #232323;
+  --border-light: #333;
+  --text-light: #a8a8a8;
+  --text-dark: #e6e6e6;
+}
+
+/* Modo meditación del timeline: la barra se desvanece. */
+.menu.menu-oculto {
+  opacity: 0;
+  transform: translateY(-0.5rem);
+  pointer-events: none;
+}
+
+.menu-capsula {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  max-width: 72rem;
+  margin: 0 auto;
+  padding: 0 1.25rem;
+  white-space: nowrap;
+}
+
+.menu-lista {
+  display: flex;
+  align-items: center;
+  gap: 1.6rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.menu-lista a {
+  display: inline-block;
+  padding: 0.25rem 0;
+  font-size: 0.85rem;
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  color: var(--text-light);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+}
+.menu-lista a:hover {
+  color: var(--text-dark);
+}
+.menu-lista a[aria-current] {
+  color: var(--text-dark);
+  font-weight: 500;
+  border-bottom-color: currentColor;
+}
+
+.menu a:focus-visible,
+.menu-boton:focus-visible {
+  outline: 2px solid var(--text-dark);
+  outline-offset: 3px;
+  border-radius: 3px;
+}
+
+.menu-boton {
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  width: 2.5rem;
+  height: 2.5rem;
+  margin-right: -0.5rem;
+  padding: 0.5rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-light);
+}
+.menu-boton:hover {
+  color: var(--text-dark);
+}
+.menu-linea {
+  display: block;
+  width: 18px;
+  height: 2px;
+  margin: 0 auto;
+  border-radius: 1px;
+  background-color: currentColor;
+  transition: transform 0.2s;
+}
+.menu-boton[aria-expanded="true"] .menu-linea:first-child {
+  transform: translateY(3px) rotate(45deg);
+}
+.menu-boton[aria-expanded="true"] .menu-linea:nth-child(2) {
+  transform: translateY(-3px) rotate(-45deg);
+}
+
+.menu-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (max-width: 860px) {
+  .menu-capsula {
+    justify-content: flex-end;
+    padding: 0 1rem;
+  }
+  .menu-boton {
+    display: flex;
+  }
+  .menu-lista {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+    padding: 0.4rem 1.25rem 0.8rem;
+    background-color: var(--bg-white);
+    border-bottom: 1px solid var(--border-light);
+    box-shadow: 0 6px 12px #0000000f;
+  }
+  .menu.menu-abierto .menu-lista {
+    display: flex;
+  }
+  .menu-lista a {
+    display: block;
+    padding: 0.7rem 0.25rem;
+    font-size: 0.95rem;
+    border-bottom: none;
+  }
+  .menu-lista a[aria-current] {
+    text-decoration: underline;
+    text-underline-offset: 0.25em;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .menu,
+  .menu-linea {
+    transition: none;
+  }
+}
+
+@media print {
+  .menu {
+    display: none;
+  }
+}
