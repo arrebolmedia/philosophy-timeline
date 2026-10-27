@@ -20,8 +20,8 @@ const crimsonText = Crimson_Text({
   variable: '--font-crimson',
 })
 
-const playfairDisplay = Playfair_Display({ 
-  weight: ['700', '900'],
+// Fuente variable (todos los pesos), como en el sitio: el menú, el pie y el 404 usan 400 y 600.
+const playfairDisplay = Playfair_Display({
   subsets: ['latin'],
   variable: '--font-playfair',
 })

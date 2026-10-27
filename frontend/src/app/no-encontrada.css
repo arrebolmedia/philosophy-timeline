@@ -1,0 +1,150 @@
+/*
+ * 404 del timeline: el mismo aspecto que el de anthonycazares.cafe (app/not-found.tsx del repo
+ * del sitio principal, hecho allí con Tailwind y los tokens del sitio). Paleta del sitio, con la
+ * oscura bajo la clase .dark (next-themes).
+ */
+
+.no-encontrada {
+  --text-dark: #2a2a2a;
+  --text-light: #666;
+  --accent: #4a4a4a;
+  max-width: 44rem;
+  margin: 0 auto;
+  padding: 6.5rem 1rem 2rem;
+  color: var(--text-dark);
+  font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  font-size: 1.1875rem;
+  line-height: 1.68;
+}
+.dark .no-encontrada {
+  --text-dark: #e6e6e6;
+  --text-light: #a8a8a8;
+  --accent: #b9b9b9;
+}
+@media (min-width: 640px) {
+  .no-encontrada {
+    padding: 8rem 1.25rem 2rem;
+  }
+}
+@media (max-width: 30rem) {
+  .no-encontrada {
+    font-size: 1.0625rem;
+  }
+}
+
+.no-encontrada p {
+  margin: 0;
+}
+.no-encontrada .ne-numero {
+  font-family: var(--font-playfair), "Playfair Display", Georgia, serif;
+  font-size: clamp(5.5rem, 24vw, 9.5rem);
+  font-weight: 600;
+  line-height: 0.9;
+  letter-spacing: -0.02em;
+  color: color-mix(in srgb, var(--text-dark) 13%, transparent);
+  user-select: none;
+}
+.no-encontrada .ne-rotulo {
+  margin: 1.5rem 0 0.75rem;
+  font-family: var(--font-poppins), "Poppins", system-ui, sans-serif;
+  font-size: 0.72rem;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  font-weight: 500;
+  color: var(--accent);
+}
+.no-encontrada .ne-titulo {
+  margin: 0 0 2rem;
+  font-family: var(--font-playfair), "Playfair Display", Georgia, serif;
+  font-size: 2.05rem;
+  font-weight: 600;
+  line-height: 1.18;
+  text-wrap: balance;
+}
+@media (min-width: 640px) {
+  .no-encontrada .ne-titulo {
+    font-size: 2.4rem;
+  }
+}
+
+.no-encontrada .ne-cita {
+  margin: 0 0 2rem;
+  padding-left: 1.25rem;
+  border-left: 2px solid var(--accent);
+}
+.no-encontrada .ne-cita blockquote {
+  margin: 0;
+  font-family: var(--font-playfair), "Playfair Display", Georgia, serif;
+  font-size: 1.3rem;
+  font-style: italic;
+  line-height: 1.375;
+}
+@media (min-width: 640px) {
+  .no-encontrada .ne-cita blockquote {
+    font-size: 1.45rem;
+  }
+}
+.no-encontrada .ne-cita figcaption {
+  margin-top: 0.75rem;
+  font-size: 0.92rem;
+  color: var(--text-light);
+}
+
+.no-encontrada .ne-texto {
+  margin-bottom: 3rem;
+}
+
+.no-encontrada .ne-puertas {
+  display: grid;
+  gap: 2rem 2.5rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+@media (min-width: 640px) {
+  .no-encontrada .ne-puertas {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+.no-encontrada .ne-puertas li {
+  padding-top: 1rem;
+  border-top: 1px solid color-mix(in srgb, var(--text-dark) 14%, transparent);
+}
+.no-encontrada .ne-puerta-titulo {
+  display: block;
+  font-family: var(--font-playfair), "Playfair Display", Georgia, serif;
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+.no-encontrada .ne-puerta-texto {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.95rem;
+  line-height: 1.375;
+  color: var(--text-light);
+}
+
+.no-encontrada a {
+  color: inherit;
+  text-decoration-line: underline;
+  text-underline-offset: 0.18em;
+  text-decoration-thickness: 0.06em;
+}
+.no-encontrada a:hover {
+  color: var(--accent);
+}
+.no-encontrada .ne-puertas a {
+  display: block;
+  text-decoration: none;
+}
+.no-encontrada .ne-puertas a:hover {
+  color: inherit;
+}
+.no-encontrada .ne-puertas a:hover .ne-puerta-titulo {
+  text-decoration-line: underline;
+}
+.no-encontrada a:focus-visible {
+  outline: 2px solid var(--text-dark);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
