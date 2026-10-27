@@ -3,7 +3,7 @@ import { PhilosophersList } from '@/components/philosophers/PhilosophersList';
 import { PhilosophersFilters } from '@/components/philosophers/PhilosophersFilters';
 
 export const metadata = {
-  title: 'Filósofos | Historia de la Filosofía',
+  title: 'Filósofos',
   description: 'Explora los grandes pensadores de la historia de la filosofía'
 };
 

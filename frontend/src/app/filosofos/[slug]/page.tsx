@@ -3,10 +3,12 @@ import { notFound } from 'next/navigation';
 import { PhilosopherDetail } from '@/components/philosophers/PhilosopherDetail';
 import { StatementsTimeline } from '@/components/philosophers/StatementsTimeline';
 
+// En Next 15+ params es una Promesa: leer params.slug sin await daba undefined, la API
+// respondía 404 y la ficha caía en notFound() para cualquier filósofo.
 interface PageProps {
-  params: {
+  params: Promise<{
     slug: string;
-  };
+  }>;
 }
 
 async function getPhilosopher(slug: string) {
@@ -29,22 +31,24 @@ async function getPhilosopher(slug: string) {
 }
 
 export async function generateMetadata({ params }: PageProps) {
-  const philosopher = await getPhilosopher(params.slug);
+  const { slug } = await params;
+  const philosopher = await getPhilosopher(slug);
 
   if (!philosopher) {
     return {
-      title: 'Filósofo no encontrado | Historia de la Filosofía'
+      title: 'Filósofo no encontrado'
     };
   }
 
   return {
-    title: `${philosopher.name} | Historia de la Filosofía`,
+    title: philosopher.name, // el layout añade "| Historia de la Filosofía" (template)
     description: philosopher.bioShort
   };
 }
 
 export default async function PhilosopherPage({ params }: PageProps) {
-  const philosopher = await getPhilosopher(params.slug);
+  const { slug } = await params;
+  const philosopher = await getPhilosopher(slug);
 
   if (!philosopher) {
     notFound();
