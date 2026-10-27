@@ -1,7 +1,7 @@
 # Timeline — Historia de la Filosofía
 
 Timeline interactivo de la historia de la filosofía. Next.js + Node + PostgreSQL.
-Infra en Docker + Traefik en `data.arrebolweddings.com` (8GB).
+Infra en Docker + Traefik en `data.arrebolweddings.com` (8GB). **URL pública: https://anthonycazares.cafe/timeline** (desde 2026-10-26; el subdominio `timeline.anthonycazares.cafe` redirige 301).
 
 ---
 
@@ -17,7 +17,7 @@ Infra en Docker + Traefik en `data.arrebolweddings.com` (8GB).
 
 **Módulos auditados:** M23 completo (T1–T7) + M26 statements completos (T1 LOT vs natural; T2 actos de habla / acción comunicativa; T4 industria cultural #586–#592; T5, T7, T9 #593–#604: Habermas, Heidegger, Hobbes, Rousseau, Saussure, Eco. T3 y T6 sin filósofos: lingüística educativa y tipología periodística. Grupo B aprobado e insertado: #605–#621 con 10 autores nuevos #224–#233 (Watzlawick, Burke, Salaverría, López García, Lasswell, Lazarsfeld, Watson, Skinner, Lévi-Strauss, Barthes; borderline de comunicación, psicología, historia y periodismo; sin school salvo Semiótica para Lévi-Strauss y Barthes). Conexiones M26T4–T9: 27 validadas #1276–#1302 (2026-10-26); + Habermas #622 esfera pública (Strukturwandel 1962, verificado en SEP §1.2) y Burke #608 → #622 crítica #1303 (verificada en Burke, Manuscrits 23, 2005, p. 25); sin conexión aún Burke #606, Hobbes #599, Salaverría #609/#611/#612, Lasswell como origen. M26 COMPLETO) + **M27 completo (T1–T9) y M28 T1–T2: 97 statements #623–#719, 30 autores nuevos #234–#263 (2026-10-26); propuestas en `C:\tmp\m27\`; conexiones: 91 validadas #1304–#1394 (2026-10-26): 62 recomendadas + 15 recomendadas con fuente cotejada en web (13 confirmadas, 2 parciales) + 14 opcionales verificadas (8 confirmadas, 4 parciales, 2 lectura propia con confidence 2); sin conexión aún #636 (Jouvenel) y #695 (Huntington), con candidatas verificadas: #636→#650 Sieyès y #695→#687 Wallerstein; 31 opcionales no cargadas (`C:\tmp\conn27\REVISION_CONEXIONES_M27_M28.md`)** + M1, M2, M4, M7, M8, M9, M10, M12, M13, M14, M15, M16, M18, M19, M20, M21, M22. M3 (técnicas) y M6 (redacción) no doctrinales. Lingüísticos saltados: M5, M11, M17. M24 (Latín II) y M25 (Historia del Arte) excluidos por decisión (no doctrinales para la timeline).
 **Auditoría:** 0 pending — toda la timeline auditada con tipología completa.
-**Versión:** 2.2.9
+**Versión:** 2.3.0
 
 ---
 
@@ -149,7 +149,10 @@ SELECT setval(pg_get_serial_sequence('connections', 'id'), (SELECT MAX(id) FROM 
 Bump `frontend/src/version.ts` en PATCH.
 
 ```bash
-ssh root@data.arrebolweddings.com "cd /opt/timeline && git pull && docker compose up -d --build frontend backend"
+# En el host solo existe docker-compose standalone (no el plugin `docker compose`).
+# /opt/timeline/docker-compose.yml de PRODUCCIÓN no está en git (modificado en el servidor, con secretos);
+# los Dockerfiles de frontend/ y backend/ tampoco: existen solo allí. NO sobrescribirlos con los del repo.
+ssh root@data.arrebolweddings.com "cd /opt/timeline && git pull && docker-compose build timeline-frontend && docker-compose up -d --no-deps timeline-frontend timeline-backend"
 ```
 
 ---
@@ -192,6 +195,7 @@ ssh root@data.arrebolweddings.com "cd /opt/timeline && git pull && docker compos
 
 | Versión | Fecha | Cambio |
 |---------|-------|--------|
+| 2.3.0 | 2026-10-26 | **Mudanza a https://anthonycazares.cafe/timeline.** Next con `basePath: '/timeline'` (`src/lib/basePath.ts`); la visualización pasa a la raíz de la app y se retira la landing; NextAuth con `basePath` en `SessionProvider` y `pages.signIn` prefijado (el middleware NO se prefija: ver comentarios); Traefik: `/timeline` → frontend (prioridad 300, sobre el sitio principal en 200), `/timeline/api/auth` y `/timeline/api/og` → frontend (320), resto de `/timeline/api` → backend con stripprefix (310); el subdominio redirige 301 conservando ruta y query. Enlace en el menú del sitio principal. |
 | 2.1.0 | 2026-05-15 | Sistema riguroso de auditoría de conexiones: 13 subtipos en 2 familias, 4 tests obligatorios, schema DB (`connection_subtype`, `audit_status`, `audit_notes`, `audited_at` + CHECK + vista de reporte), admin UI rediseñada con filtros por subtipo/estado/filósofo y form de auditoría inline. Endpoint nuevo `/api/admin/connections/by-philosopher/:id`. |
 | 2.0.5 | 2026-05-15 | Performance zoom/drag: removidos GPU hints contraproducentes (`will-change`, `translateZ(0)`) que saturaban el compositor con 1500 nodos SVG; sin momentum en zoom (precisión); inercia del drag acortada (decay 0.74, boost 0.12). Link de Deniz a /philo/. |
 | 2.0.3 | 2026-05-14 | Filósofos vivos: "presente" en lugar de NULL. Stats sidebar muestra "Edad" calculada contra año actual cuando vive. |
@@ -211,7 +215,9 @@ ssh root@data.arrebolweddings.com "cd /opt/timeline && git pull && docker compos
 - **Host prod:** `data.arrebolweddings.com` (138.68.55.125, 8GB)
 - **Stack:** Docker + Traefik v2.10 + Let's Encrypt (`le`)
 - **Containers timeline:** `timeline-frontend`, `timeline-backend`, `timeline-db` (postgres:17-alpine)
-- **Compose files:** `/opt/timeline/docker-compose.yml`
+- **Compose files:** `/opt/timeline/docker-compose.yml` (de producción, fuera de git; respaldos `*.bak-mudanza-*`)
+- **Rutas (Traefik):** `anthonycazares.cafe/timeline` (frontend, basePath) · `/timeline/api/*` → backend sin el prefijo · el sitio principal (`anthonycazares-historia`, nginx estático, repo `C:\Projects\anthonycazares-cafe`) atiende el resto del dominio con prioridad 200
+- **Variables de prod:** `NEXT_PUBLIC_API_URL` y `NEXT_PUBLIC_BASE_URL` = `https://anthonycazares.cafe/timeline` (se incrustan en build); `NEXTAUTH_URL` = `https://anthonycazares.cafe/timeline/api/auth`; `CORS_ORIGIN` = `https://anthonycazares.cafe`
 - **Network compartida:** `traefik-public` (external)
 - **Notas Docker:** backend `node:20-slim` (libssl Prisma); frontend `--legacy-peer-deps` (next-themes vs React 18)
 
